@@ -24,3 +24,6 @@ all:
 	@$(AS) "datasize.asm"
 	@$(OBJCOPY) -O binary a.out "datasize.bin"
 	@rm a.out
+	@$(AS) "sdsound.asm"
+	@$(OBJCOPY) -O binary a.out "sdsound.bin"
+	@rm a.out

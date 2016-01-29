@@ -66,11 +66,14 @@ test:
          add r1, #0x4
          call strcpy
          
+         @ Mount sdmc: for this and other things, sd_: for editing rom: locations
          ldr r0, sdmc_on
          ldr r0, [r0]
          cmp r0, #0x0
          bne skip_sdmc_mount
          ldr r0, =sdmc+base_addr
+         call mount_sdmc
+         ldr r0, =sdmc_short+base_addr
          call mount_sdmc
          ldr r0, sdmc_on
          mov r1, #0x1
@@ -226,4 +229,5 @@ something_resource_lock: .long 0xC57218
 
 .align 4
 sdmc:       .asciz "sdmc:"
+sdmc_short:       .asciz "sd_:"
 mod_path:   .asciz "sdmc:/saltysd/smash/"
