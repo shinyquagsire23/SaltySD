@@ -75,8 +75,8 @@ skip_sdmc_mount:
          add r0, sp, #0x0 
          call IFile_Close     
      pop  {r0-r7,lr} 
-     ldr r0, =0xFFFFFFFF @Return some fake value
-     cmp r3, #0x2
+     ldr r0, =0x0001 @ Return some fake file, since the other functions will    
+     cmp r3, #0x2    @ override it's properties with SD properties anyhow
      beq exit_find
      bne exit_findf   
 exit_find:
