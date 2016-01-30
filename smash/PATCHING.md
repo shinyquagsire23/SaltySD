@@ -4,9 +4,14 @@ These edits redirect the romfs:/dt and romfs:/ls files to load straight from sdm
 
 **Patching Instructions**
 
-Build the hooks and payloads with the Makefile provided. Placed the assembled lib::Resource::data_size hook (hookdatasize.bin) at 0x13F4B8, and the payload (datasize.bin) at 0xA1C800. The assembled lib::Resource::lock hook (hooklock.bin) must be placed at 0x1816CC, with the payload (lock.bin) at 0xA1B800. Finally, lib::Resource::load must nullsub'd by writing bx lr (1E FF 2F E1) at 0x13F4B4, and lib::Resource::is_loaded must always return 1 (01 00 A0 E3 1E FF 2F E1) at 0x140DBC.
-
-To patch BGM sound to load from SD, write sdsound.bin to 0xA1CB00, and then write 0x00A1CB00 to 0x7AB5C4 (00 CB A1 00) and 0x00B6379B to 0x7AB5E0 (9B 37 B6 00). BGM sounds will then be able to be loaded from sdmc:/saltysd/smash/sound/bgm/.
+ * Build the hooks and payloads with the Makefile provided. 
+ * Place the assembled lib::Resource::data_size hook (hookdatasize.bin) at 0x13F4B8, and the payload (datasize.bin) at 0xA1C800. 
+ * The assembled lib::Resource::lock hook (hooklock.bin) must be placed at 0x1816CC, with the payload (lock.bin) at 0xA1B800. 
+ * Place the assembled lib::Resource::is_exist hook (hookexist.bin) at 0x159E9C, with the payload (exist.bin) at 0xA1CD00. 
+ * The assembled lib::Resource::is_exist hook (hookexist.bin) must be placed at 0x159E9C, with the payload (exist.bin) at 0xA1CD00. 
+ * The assembled lib::Resource::find and lib::Resource::findf hooks (hookfind.bin) must be placed at both 0x16EFAC and 0x9E1F58, with the payload (find.bin) at 0xA1CF00. 
+ * lib::Resource::load must nullsub'd by writing bx lr (1E FF 2F E1) at 0x13F4B4, and lib::Resource::is_loaded must always return 1 (01 00 A0 E3 1E FF 2F E1) at 0x140DBC.
+ * To patch BGM sound to load from SD, write sdsound.bin to 0xA1CB00, and then write 0x00A1CB00 to 0x7AB5C4 (00 CB A1 00) and 0x00B6379B to 0x7AB5E0 (9B 37 B6 00). BGM sounds will then be able to be loaded from sdmc:/saltysd/smash/sound/bgm/.
 
 **Notes**
 

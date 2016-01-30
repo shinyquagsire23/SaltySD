@@ -5,10 +5,11 @@
     blx r6
 .endm
 
-.equ base_addr,     0xA1C800
+.equ base_addr,     0xA1CF00
 .equ mount_sdmc,    0x28FEF4
 .equ IFile_Init,    0x12A2F0
 .equ IFile_Open,    0x12A218
+.equ IFile_Exists,  0x863020
 .equ IFile_GetSize, 0x1182CC
 .equ IFile_Read,    0x13EEB8
 .equ IFile_Close,   0x12A35C
@@ -17,38 +18,32 @@
 .equ strlen,        0x2FEB2C
 
 test:
-     @Compensate for removing code
-     add lr, #0x4
-     sub sp, sp, #0x18
-     ldrh r1, [r0]
-     mov r2, r0
+     ldr r3, =0x16efb4
+     cmp lr, r3
+     moveq r3, #0x2 @find
+     movne r3, #0x1 @findf
+     @bne continue_findf
      
      push {r0-r7,lr}
-         ldr r0, file_handle
-         mov r1, r2
-         str r2, [r0, #0x28]
-         ldr r0, res_str
-         ldr r3, =0x181814 @lib::Resource::path_str(char* out, Resource* res)
-         blx r3
+         mov r5, r2
+         sub sp, sp, #0x204
 
          ldr r0, file_handle
          ldr r3, =0x161F10 @nn::os::CriticalSection::Initialize()
          blx r3
          
-         ldr r0, new_res_str
+         add r0, sp, #0x4
          ldr r1, =mod_path+base_addr
          call strcpy
          
-         
          @strcat refuses to work :/
-         ldr r0, new_res_str
+         add r0, sp, #0x4
          call strlen
-         ldr r2, new_res_str
+         add r2, sp, #0x4
          add r0, r0, r2
-         ldr r1, res_str
+         mov r1, r5
          add r1, #0x4
          call strcpy
-         ldr r3, file_handle
          
          ldr r0, sdmc_on
          ldr r0, [r0]
@@ -60,51 +55,65 @@ test:
          mov r1, #0x1
          str r1, [r0]
          
-skip_sdmc_mount:      
-         ldr r0, file_handle
+skip_sdmc_mount:   
+         add r0, sp, #0x0 
          call IFile_Init
+         add r1, sp, #0x0 
+         cmp r0, r1
+         bne skip_sdmc_mount
+         @str r0, [r1, #0x58-0x20]
+         ldr r1, =0xBE2E50
+         cmp r0, r1
+         beq close_and_end
          
-         ldr r0, file_handle
-         ldr r1, new_res_str
+         add r0, sp, #0x0 
+         add r1, sp, #0x4
          mov r2, #0x1
-         call IFile_Open
+         call IFile_Exists
          cmp r0, #0x0
          beq close_and_end @ SD file doesn't exist, exit and pretend it never happened.
-     
-skip_clear:
-         
-         ldr r0, file_handle
-         call IFile_GetSize
-         ldr r3, file_handle
-         str r0, [r3, #0x10]
-         
-         ldr r0, file_handle
-         call IFile_Close 
-end_read_sd:  
-     pop  {r0-r7,lr}
-   
-     ldr r3, file_handle
-     ldr r0, [r3, #0x10]
-     
-     b exit
+         add r0, sp, #0x0 
+         call IFile_Close     
+     pop  {r0-r7,lr} 
+     ldr r0, =0xFFFFFFFF @Return some fake value
+     cmp r3, #0x2
+     beq exit_find
+     bne exit_findf   
+exit_find:
+     ldr lr, =0x16EFE4
+     bx lr
+
+exit_findf:
+     ldr lr, =0x9E1F80
+     bx lr
      
 close_and_end:
-        ldr r0, file_handle
+        add r0, sp, #0x0 
         call IFile_Close     
 close:
+     add sp, sp, #0x204
      pop  {r0-r7,lr}
-continue:   
-     mov r0, #0x0  
-     ldr lr, =0x16F0A0
+     cmp r3, #0x2
+     beq continue_find
+     bne continue_findf
+     
+continue_find: 
+     sub sp, sp, #0xc
+     ldrh r1, [r1]
+     mov r4, r0  
+     ldr lr, =0x16EFB8
      bx lr
      
-exit:
-     ldr lr, =0x16F0FC
-     bx lr
+continue_findf:
+    strh r0, [sp, #0x4]
+    mov r3, #0x1
+    add r1, sp, #0x4
+    ldr lr, =0x9E1F64
+    bx lr
     
 .pool
 
-file_handle: .long 0xC68D00
+file_handle: .long 0xC68D20
 sdmc_on:     .long 0xC68D80
 res_str:     .long 0xC68700
 new_res_str: .long 0xC68A00

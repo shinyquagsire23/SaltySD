@@ -5,10 +5,11 @@
     blx r6
 .endm
 
-.equ base_addr,     0xA1C800
+.equ base_addr,     0xA1CD00
 .equ mount_sdmc,    0x28FEF4
 .equ IFile_Init,    0x12A2F0
 .equ IFile_Open,    0x12A218
+.equ IFile_Exists,  0x863020
 .equ IFile_GetSize, 0x1182CC
 .equ IFile_Read,    0x13EEB8
 .equ IFile_Close,   0x12A35C
@@ -17,16 +18,12 @@
 .equ strlen,        0x2FEB2C
 
 test:
-     @Compensate for removing code
-     add lr, #0x4
-     sub sp, sp, #0x18
      ldrh r1, [r0]
+     sub sp, sp, #0x14
      mov r2, r0
      
      push {r0-r7,lr}
-         ldr r0, file_handle
          mov r1, r2
-         str r2, [r0, #0x28]
          ldr r0, res_str
          ldr r3, =0x181814 @lib::Resource::path_str(char* out, Resource* res)
          blx r3
@@ -38,7 +35,6 @@ test:
          ldr r0, new_res_str
          ldr r1, =mod_path+base_addr
          call strcpy
-         
          
          @strcat refuses to work :/
          ldr r0, new_res_str
@@ -60,33 +56,23 @@ test:
          mov r1, #0x1
          str r1, [r0]
          
-skip_sdmc_mount:      
+skip_sdmc_mount:     
          ldr r0, file_handle
          call IFile_Init
          
          ldr r0, file_handle
          ldr r1, new_res_str
          mov r2, #0x1
-         call IFile_Open
+         call IFile_Exists
          cmp r0, #0x0
          beq close_and_end @ SD file doesn't exist, exit and pretend it never happened.
-     
-skip_clear:
-         
          ldr r0, file_handle
-         call IFile_GetSize
-         ldr r3, file_handle
-         str r0, [r3, #0x10]
-         
-         ldr r0, file_handle
-         call IFile_Close 
-end_read_sd:  
-     pop  {r0-r7,lr}
-   
-     ldr r3, file_handle
-     ldr r0, [r3, #0x10]
-     
-     b exit
+         call IFile_Close     
+     pop  {r0-r7,lr}   
+exit:
+     mov r0, #0x1
+     ldr lr, =0x159EEC
+     bx lr
      
 close_and_end:
         ldr r0, file_handle
@@ -95,11 +81,8 @@ close:
      pop  {r0-r7,lr}
 continue:   
      mov r0, #0x0  
-     ldr lr, =0x16F0A0
-     bx lr
      
-exit:
-     ldr lr, =0x16F0FC
+     ldr lr, =0x159EA8
      bx lr
     
 .pool
@@ -111,5 +94,6 @@ new_res_str: .long 0xC68A00
 something_resource_lock: .long 0xC57218
 
 .align 4
+teststr: .asciz "sdmc:/payload.bin"
 sdmc:       .asciz "sdmc:"
 mod_path:   .asciz "sdmc:/saltysd/smash/"
