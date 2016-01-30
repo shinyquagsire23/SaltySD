@@ -73,17 +73,19 @@ skip_sdmc_mount:
          cmp r0, #0x0
          beq close_and_end @ SD file doesn't exist, exit and pretend it never happened.
          add r0, sp, #0x0 
-         call IFile_Close     
-     pop  {r0-r7,lr} 
-     ldr r0, =0x0001 @ Return some fake file, since the other functions will    
-     cmp r3, #0x2    @ override it's properties with SD properties anyhow
+         call IFile_Close 
+         add sp, sp, #0x204
+     pop  {r0-r7,lr}
+     cmp r3, #0x2
      beq exit_find
-     bne exit_findf   
+     bne exit_findf  
 exit_find:
+     ldr r0, =0x0001 @ Load some fake file ID, since other functions will see SD file first anyways
      ldr lr, =0x16EFE4
      bx lr
 
 exit_findf:
+     ldr r0, =0x0001 @ Load some fake file ID, since other functions will see SD file first anyways
      ldr lr, =0x9E1F80
      bx lr
      
