@@ -22,8 +22,8 @@ test:
      add lr, #0x4
      sub sp, sp, #0x18
      ldrh r1, [r0]
+     mov r2, r0
      
-     b continue
      push {r0-r6,lr}
          ldr r4, file_handle
          str r2, [r4, #0x34]
@@ -39,7 +39,6 @@ test:
          str r1, [r3, #0x30]
          str r0, [r3, #0x38] 
      pop  {r0-r6,lr}
-     
      
      push {r0-r7,lr}
          ldr r0, file_handle
