@@ -16,30 +16,35 @@
 .equ strcat,        0x1003F0
 .equ strcpy,        0x2FEBD8
 .equ strlen,        0x2FEB2C
+.equ liballoc,      0x157760
+.equ libdealloc,    0x167038
+.equ crit_this,      0x11DAA4
 
 test:
      ldr r3, =0x16efb4
      cmp lr, r3
      moveq r3, #0x2 @find
      movne r3, #0x1 @findf
-     @bne continue_findf
      
      push {r0-r7,lr}
          mov r5, r2
-         sub sp, sp, #0x204
 
-         ldr r0, file_handle
+         ldr r0, =0x204
+         call liballoc
+         mov r7, r0
+
+         call crit_this
          ldr r3, =0x161F10 @nn::os::CriticalSection::Initialize()
          blx r3
          
-         add r0, sp, #0x4
+         add r0, r7, #0x4
          ldr r1, =mod_path+base_addr
          call strcpy
          
          @strcat refuses to work :/
-         add r0, sp, #0x4
+         add r0, r7, #0x4
          call strlen
-         add r2, sp, #0x4
+         add r2, r7, #0x4
          add r0, r0, r2
          mov r1, r5
          add r1, #0x4
@@ -56,9 +61,9 @@ test:
          str r1, [r0]
          
 skip_sdmc_mount:   
-         add r0, sp, #0x0 
+         mov r0, r7
          call IFile_Init
-         add r1, sp, #0x0 
+         add r1, r7, #0x0 
          cmp r0, r1
          bne skip_sdmc_mount
          @str r0, [r1, #0x58-0x20]
@@ -66,34 +71,40 @@ skip_sdmc_mount:
          cmp r0, r1
          beq close_and_end
          
-         add r0, sp, #0x0 
-         add r1, sp, #0x4
+         mov r0, r7
+         add r1, r7, #0x4
          mov r2, #0x1
          call IFile_Exists
          cmp r0, #0x0
          beq close_and_end @ SD file doesn't exist, exit and pretend it never happened.
-         add r0, sp, #0x0 
+         mov r0, r7
          call IFile_Close 
-         add sp, sp, #0x204
+         mov r0, r7
+         call libdealloc
      pop  {r0-r7,lr}
      cmp r3, #0x2
      beq exit_find
      bne exit_findf  
 exit_find:
-     ldr r0, =0x0001 @ Load some fake file ID, since other functions will see SD file first anyways
+     ldrh r1, [r0] @ Load some fake file ID, since other functions will see SD file first anyways
+     ldr r1, =0xFFFFFFFF
+     strh r1, [r0]
      ldr lr, =0x16EFE4
      bx lr
 
 exit_findf:
-     ldr r0, =0x0001 @ Load some fake file ID, since other functions will see SD file first anyways
+     ldrh r0, [r4] @ Load some fake file ID, since other functions will see SD file first anyways
+     ldr r0, =0xFFFFFFFF
+     strh r0, [r4]
      ldr lr, =0x9E1F80
      bx lr
      
 close_and_end:
-        add r0, sp, #0x0 
+        mov r0, r7
         call IFile_Close     
 close:
-     add sp, sp, #0x204
+     mov r0, r7
+     call libdealloc
      pop  {r0-r7,lr}
      cmp r3, #0x2
      beq continue_find
@@ -115,7 +126,7 @@ continue_findf:
     
 .pool
 
-file_handle: .long 0xC68D20
+storage: .long 0xC68D20
 sdmc_on:     .long 0xC68D80
 res_str:     .long 0xC68700
 new_res_str: .long 0xC68A00

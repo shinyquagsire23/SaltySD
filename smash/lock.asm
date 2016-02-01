@@ -19,6 +19,10 @@
 .equ res_deallocate, 0x192CE8
 .equ idk, 0x178DA8
 .equ referenced_by_ls_init, 0x195C00
+.equ liballoc,      0x157760
+.equ libdealloc,    0x167038
+.equ memcpy,        0x3009E0
+.equ crit_this,      0x11DAA4
 
 test:
      @Compensate for removing code
@@ -27,70 +31,77 @@ test:
      sub sp, sp, #0x10
      
      push {r0-r6,lr}
-         ldr r4, file_handle
+         ldr r4, storage
          str r2, [r4, #0x34]
          mov r4, r1
-         ldr r3, file_handle
+         ldr r3, storage
          ldrh R0, [R2]
          strh R0, [r3,#0x8]
          ldr  R1, [r3,#0x8]
          mov  R0, r3
          call referenced_by_ls_init
          ldr r1, [r0, #0x4]
-         ldr r3, file_handle
+         ldr r3, storage
          str r1, [r3, #0x30]
          str r0, [r3, #0x38]
      pop  {r0-r6,lr}
      
-     push {r0-r7,lr}
+     push {r0-r8,lr}
          mov r5, r1
-         mov r1, r2
-         ldr r0, res_str
+         ldr r0, storage
+         str r2, [r0, #0x28]
+         str r7, [r0, #0x40]
+         
+         ldr r0, =0x404
+         call liballoc
+         mov r8, r0
+         add r7, r8, #0x20
+         
+         ldr r0, =mod_path+base_addr
+         call strlen
+         add r7, r7, r0
+         
+         ldr r0, storage
+         ldr r1, [r0, #0x28]
+         mov r0, r7
+         sub r0, r0, #0x4
          ldr r3, =0x181814 @lib::Resource::path_str(char* out, Resource* res)
          blx r3
+         add r7, r8, #0x20
 
-         ldr r0, file_handle
+         call crit_this
          ldr r3, =0x161F10 @nn::os::CriticalSection::Initialize()
          blx r3
          
-         ldr r0, new_res_str
-         ldr r1, =mod_path+base_addr
-         call strcpy
-         
-         @strcat refuses to work :/
-         ldr r0, new_res_str
+         ldr r0, =mod_path+base_addr
          call strlen
-         ldr r2, new_res_str
-         add r0, r0, r2
-         ldr r1, res_str
-         add r1, #0x4
-         call strcpy
+         mov r2, r0
+         mov r0, r7
+         ldr r1, =mod_path+base_addr
+         call memcpy
          
-         @ Mount sdmc: for this and other things, sd_: for editing rom: locations
          ldr r0, sdmc_on
          ldr r0, [r0]
          cmp r0, #0x0
          bne skip_sdmc_mount
          ldr r0, =sdmc+base_addr
          call mount_sdmc
-         ldr r0, =sdmc_short+base_addr
-         call mount_sdmc
          ldr r0, sdmc_on
          mov r1, #0x1
          str r1, [r0]
          
 skip_sdmc_mount:       
-         ldr r0, file_handle
+         mov r0, r8
          call IFile_Init
          
-         ldr r0, file_handle
-         ldr r1, new_res_str
+         mov r0, r8
+         mov r1, r7
          mov r2, #0x1
          call IFile_Open
          cmp r0, #0x0
          beq close_and_end @ SD file doesn't exist, exit and pretend it never happened.
          
-         ldr r4, file_handle
+         ldr r4, storage
          ldr r4, [r4, #0x30]
          cmp r4, #0x0
          beq close_and_end
@@ -105,22 +116,21 @@ skip_sdmc_mount:
          tst r1, #0x8
          bne close_with_existing @ Resource is loaded, exit
          
-         ldr r4, file_handle
+         ldr r4, storage
          ldr r1, [r4, #0x38]
          ldr r0, something_resource_lock
          ldr r0, [r0]
          call idk @ Not sure, but needed to deallocate
          
-         ldr r4, file_handle
+         ldr r4, storage
          ldr r1, [r4, #0x30]
          ldr r1, [r1, #0xc]
          call res_deallocate @ Force out existing resource so we can load a new one in
      
-skip_clear:
-         
-         ldr r0, file_handle
+skip_clear:        
+         mov r0, r8
          call IFile_GetSize
-         ldr r3, file_handle
+         ldr r3, storage
          str r0, [r3, #0x10]
          
          cmp r5, #0x1
@@ -130,27 +140,31 @@ skip_clear:
          ldr r0, something_resource_lock
          ldr r0, [r0]
          mov r2, #0x80
+         ldr r4, storage
+         ldr r3, [r4, #0x38]
          call resalloc
-         ldr r3, file_handle
-         str r0, [r3, #0x18]
          
-read_in:         
+         ldr r3, storage
+         str r0, [r3, #0x18]        
+read_in:               
          cmp r5, #0x1
          beq end_read_sd @ Don't read if it's just a check-in
-         ldr r0, file_handle @file
+         ldr r0, storage
          ldr r1, [r0, #0x18] @dst
          ldr r2, [r0, #0x10] @size
          add r3, r0, #0x14 @bytes_read
+         mov r0, r8 @file
          call IFile_Read
-         
-         ldr r0, file_handle
+end_read_sd:         
+         mov r0, r8
          call IFile_Close 
-end_read_sd:  
-     pop  {r0-r7,lr}
+         mov r0, r8
+         call libdealloc
+     pop  {r0-r8,lr}
    
      @removed code
      push {r0-r6,lr}
-         ldr r4, file_handle
+         ldr r4, storage
          ldr r1, [r4, #0x30]
          ldr r2, [r4, #0x18]
          str r2, [r1, #0xC] @Set our alloc'd address
@@ -162,16 +176,18 @@ end_read_sd:
          strneh r2, [r1, #0x8] @Set our resource as loaded, with our SD flag
      pop  {r0-r6,lr}
      
-     ldr r0, file_handle
+     ldr r0, storage
      ldr r0, [r0, #0x18]
      
      b exit
      
 close_and_end:
-        ldr r0, file_handle
+        mov r0, r8
         call IFile_Close     
 close:
-     pop  {r0-r7,lr}
+     mov r0, r8
+     call libdealloc
+     pop  {r0-r8,lr}
 continue:     
      @removed code
      mov r4, r1
@@ -196,11 +212,11 @@ continue:
          call   0x137EBC
          
          @ Stow pointer away
-         ldr r3, file_handle
+         ldr r3, storage
          str r0, [r3, #0x20]
      pop  {r0-r6,lr}
     
-     ldr r3, file_handle
+     ldr r3, storage
      ldr r0, [r3, #0x20]
      
 exit:
@@ -208,20 +224,21 @@ exit:
      bx lr
      
 close_with_existing:
-        ldr r0, file_handle
-        call IFile_Close     
-     pop  {r0-r7,lr}
+        mov r0, r8
+        call IFile_Close   
+     mov r0, r8
+     call libdealloc
+     pop  {r0-r8,lr}
 
-     ldr r4, file_handle
+     ldr r4, storage
      ldr r1, [r4, #0x30]
      ldr r0, [r1, #0xc]
-     str r0, [r4, #0x54]
      
      b exit
     
 .pool
 
-file_handle: .long 0xC68D00
+storage: .long 0xC68D00
 sdmc_on:     .long 0xC68D80
 res_str:     .long 0xC68700
 new_res_str: .long 0xC68A00
