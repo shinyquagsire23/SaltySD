@@ -21,9 +21,6 @@ all:
 	@$(AS) "hookexist.asm"
 	@$(OBJCOPY) -O binary a.out "hookexist.bin"
 	@rm a.out
-	@$(AS) "hookfind.asm"
-	@$(OBJCOPY) -O binary a.out "hookfind.bin"
-	@rm a.out
 	@$(AS) "lock.asm"
 	@$(OBJCOPY) -O binary a.out "lock.bin"
 	@rm a.out
@@ -32,9 +29,6 @@ all:
 	@rm a.out
 	@$(AS) "exist.asm"
 	@$(OBJCOPY) -O binary a.out "exist.bin"
-	@rm a.out
-	@$(AS) "find.asm"
-	@$(OBJCOPY) -O binary a.out "find.bin"
 	@rm a.out
 	@$(AS) "sdsound.asm"
 	@$(OBJCOPY) -O binary a.out "sdsound.bin"
