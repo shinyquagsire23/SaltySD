@@ -8,10 +8,11 @@ if len(sys.argv) < 2:
     quit()
     
 files = []
+sys.argv[1] = sys.argv[1].replace('\\', '/')
 
 for root, directories, filenames in os.walk(sys.argv[1]):
      for filename in filenames: 
-             name = os.path.join(root,filename).replace(os.path.join(sys.argv[1], ''), "").lower()
+             name = os.path.join(root,filename).replace(os.path.join(sys.argv[1], ''), "").lower().replace('\\', '/')
              print name.lower() + " " + hex(crc(name.lower()))
              files.append(name.lower())
 
