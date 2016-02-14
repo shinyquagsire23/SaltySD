@@ -10,6 +10,7 @@
 
 test:
      @Compensate for removing code
+     mov r2, r0
      add lr, #0x4
      ldrh r0, [r0]
      sub sp, sp, #0x10

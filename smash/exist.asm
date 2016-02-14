@@ -139,7 +139,7 @@ exit_crc:
          mov r0, r8
          mov r1, r7
          mov r2, #0x1
-         call IFile_Exists
+         call IFile_Open
          cmp r0, #0x0
          beq close_and_end @ SD file doesn't exist, exit and pretend it never happened.
          mov r0, r8

@@ -1,16 +1,11 @@
 ### Smash dt/ls SD Redirect
 
-These edits redirect the romfs:/dt and romfs:/ls files to load straight from sdmc:/saltysd/smash, allowing for modifications on any file without the need to repack or alter existing archives. SD loaded files take first priority, with update files next followed by the original content. Current hooks and payloads are adjusted for Sm4sh 1.1.4, however it may be automated or ported to different versions in the future. All addresses in the patching instructions are 3DS virtual addresses, if you are creating a modified update CIA or HANS codebin you must make sure your code.bin is decompressed and adjust the addresses 0x100000 lower (ie 0x13F4B8 becomes 0x3F4B8 in the code.bin) when editing.
+These edits redirect the romfs:/dt and romfs:/ls files to load straight from sdmc:/saltysd/smash, allowing for modifications on any file without the need to repack or alter existing archives. SD loaded files take first priority, with update files next followed by the original content. Current hooks and payloads are adjusted for Sm4sh 1.1.4, however it may be automated or ported to different versions in the future. All addresses in the patching instructions are 3DS virtual addresses, if you are creating a modified update CIA or HANS codebin you must make sure your code.bin is decompressed.
 
 **Patching Instructions**
 
- * Build the hooks and payloads with the Makefile provided. 
- * Place the assembled lib::Resource::data_size hook (hookdatasize.bin) at 0x16F0D0, and the payload (datasize.bin) at 0xA3C800. 
- * The assembled lib::Resource::lock hook (hooklock.bin) must be placed at 0x181708, with the payload (lock.bin) at 0xA3B800. 
- * Place the assembled lib::Resource::is_exist hook (hookexist.bin) at 0x159EBC, with the payload (exist.bin) at 0xA3E800.  
- * Write PUSH {R4-R6,LR} (70 40 2D E9) to 0x159EB8 and POP {R4-R6,PC} (70 80 BD E8) to 0x159F10 for the lib::Resource::is_exist hook.
- * lib::Resource::load must nullsub'd by writing bx lr (1E FF 2F E1) at 0x13F4B8, and lib::Resource::is_loaded must always return 1 (01 00 A0 E3 1E FF 2F E1) at 0x140DC0.
- * To patch BGM sound to load from SD, write sdsound.bin to 0xA3D800, and then write 0xA3D800 to 0x7BC0EC (00 D8 A3 00) and 0xB769BF to 0x7BC108 (BF 69 B7 00). BGM sounds will then be able to be loaded from sdmc:/saltysd/smash/sound/bgm/.
+ * Obtain a code.bin of the desired version of Smash to patch and place it in the same directory as the Makefile.
+ * Build with Makefile provided. The code.bin will be scanned and patched to code_saltysd.bin
  
 **Caching**
 
@@ -26,3 +21,4 @@ If a cache.bin file is *not* generated, the payloads will fall back to checking 
 
  * Without creating a cache.bin, loading screens and character selection will be laggy due to constantly opening files to check for existence.
  * Loading screens sometimes will not have the loading Smash ball and will just be black.
+ * Non-update versions (Demo, 1.0.1) have not been tested with SaltySD and are unlikely to work yet, versions past those but under 1.1.3 may not work, but are more likely to work. In addition to this, the Smash Demo does not have SDMC access in it's exheader, so SaltySD would never work with the Demo without a modified version to grant permissions.

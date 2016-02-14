@@ -12,24 +12,27 @@ export LD	:=	$(CC)
 .PHONY: assemble all clean
 
 all: 
+	@mkdir -p bin
+	@python scan.py code.bin
 	@$(AS) "hooklock.asm"
-	@$(OBJCOPY) -O binary a.out "hooklock.bin"
+	@$(OBJCOPY) -O binary a.out "bin/hooklock.bin"
 	@rm a.out
 	@$(AS) "hookdatasize.asm"
-	@$(OBJCOPY) -O binary a.out "hookdatasize.bin"
+	@$(OBJCOPY) -O binary a.out "bin/hookdatasize.bin"
 	@rm a.out
 	@$(AS) "hookexist.asm"
-	@$(OBJCOPY) -O binary a.out "hookexist.bin"
+	@$(OBJCOPY) -O binary a.out "bin/hookexist.bin"
 	@rm a.out
 	@$(AS) "lock.asm"
-	@$(OBJCOPY) -O binary a.out "lock.bin"
+	@$(OBJCOPY) -O binary a.out "bin/lock.bin"
 	@rm a.out
 	@$(AS) "datasize.asm"
-	@$(OBJCOPY) -O binary a.out "datasize.bin"
+	@$(OBJCOPY) -O binary a.out "bin/datasize.bin"
 	@rm a.out
 	@$(AS) "exist.asm"
-	@$(OBJCOPY) -O binary a.out "exist.bin"
+	@$(OBJCOPY) -O binary a.out "bin/exist.bin"
 	@rm a.out
 	@$(AS) "sdsound.asm"
-	@$(OBJCOPY) -O binary a.out "sdsound.bin"
+	@$(OBJCOPY) -O binary a.out "bin/sdsound.bin"
 	@rm a.out
+	@python patch.py code.bin
