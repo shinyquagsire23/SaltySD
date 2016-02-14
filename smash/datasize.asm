@@ -59,6 +59,7 @@ skip_sdmc_mount:
             ldr r0, [r0]
             cmp r0, #0x0
             beq alloc_cache
+begin_crc_check:
             ldr r3, [r0, #0x0] @number of crcs
             ldr r4, =0xF00FF00F
             cmp r3, r4
