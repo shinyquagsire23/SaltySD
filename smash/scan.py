@@ -1,3 +1,4 @@
+from __future__ import print_function
 import struct, sys, zlib, os
 def b2str(bytes):
     return "".join(map(chr, bytes))
