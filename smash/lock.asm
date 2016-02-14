@@ -5,26 +5,8 @@
     blx r6
 .endm
 
+.include "common.asm"
 .equ base_addr,     0xA3B800
-.equ mount_sdmc,    0x291BE0
-.equ IFile_Init,    0x12A2F4
-.equ IFile_Open,    0x12A21C
-.equ IFile_Exists,  0x873DA8
-.equ IFile_GetSize, 0x1182CC
-.equ IFile_Read,    0x13EEBC
-.equ IFile_Close,   0x12A360
-.equ strcat,        0x1003F0
-.equ strcpy,        0x2FEB40
-.equ strlen,        0x2FEA94
-.equ resalloc,      0x178780
-.equ res_deallocate, 0x192D24
-.equ idk, 0x178DE4
-.equ referenced_by_ls_init, 0x195C3C
-.equ liballoc,      0x157780
-.equ libdealloc,    0x167058
-.equ memcpy,        0x300680
-.equ crit_this,      0x11DAA4
-.equ crc,           0x6F47A4
 
 test:
      @Compensate for removing code
@@ -50,8 +32,7 @@ test:
      
      push {r0-r6,lr}
          call crit_this
-         ldr r3, =0x161F30 @nn::os::CriticalSection::Initialize()
-         blx r3
+         call crit_init
          
          ldr r0, sdmc_on
          ldr r0, [r0]
@@ -85,8 +66,7 @@ skip_sdmc_mount:
          ldr r1, [r0, #0x28]
          mov r0, r7
          sub r0, r0, #0x4
-         ldr r3, =0x181850 @lib::Resource::path_str(char* out, Resource* res)
-         blx r3
+         call path_str
          
          push {r0-r6,lr}
             mov r0, r7
@@ -198,7 +178,7 @@ exit_crc:
          
          ldr r4, storage
          ldr r1, [r4, #0x38]
-         ldr r0, something_resource_lock
+         ldr r0, =something_resource_lock
          ldr r0, [r0]
          call idk @ Not sure, but needed to deallocate
          
@@ -217,7 +197,7 @@ skip_clear:
          beq end_read_sd @ Don't allocate if it's just a check-in
          
          mov r1, r0
-         ldr r0, something_resource_lock
+         ldr r0, =something_resource_lock
          ldr r0, [r0]
          mov r2, #0x80
          ldr r4, storage
@@ -284,12 +264,12 @@ continue:
      mov  R0, SP
      push {r0-r6,lr}
          call referenced_by_ls_init
-         ldr  R1, something_resource_lock
+         ldr  R1, =something_resource_lock
          mov  R2, R4
          ldr  R3, [R1]
          mov  R1, R0
          mov  R0, R3
-         call   0x137EBC
+         call read_dtls
          
          @ Stow pointer away
          ldr r3, storage
@@ -300,7 +280,7 @@ continue:
      ldr r0, [r3, #0x20]
      
 exit:
-     ldr lr, =0x18175C
+     ldr lr, =lock_exit
      bx lr
      
 close_with_existing:
@@ -322,7 +302,6 @@ storage: .long 0xC7CD00
 sdmc_on:     .long 0xC7CD80
 cache:     .long 0xC7CD84
 res_str:     .long 0xC7C700
-something_resource_lock: .long 0xC6A6B0
 
 .align 4
 cache_bin:   .asciz "sdmc:/saltysd/smash/cache.bin"

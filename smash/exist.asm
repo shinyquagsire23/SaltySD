@@ -5,22 +5,8 @@
     blx r6
 .endm
 
+.include "common.asm"
 .equ base_addr,     0xA3E800
-.equ mount_sdmc,    0x291BE0
-.equ IFile_Init,    0x12A2F4
-.equ IFile_Open,    0x12A21C
-.equ IFile_Exists,  0x873DA8
-.equ IFile_GetSize, 0x1182CC
-.equ IFile_Read,    0x13EEBC
-.equ IFile_Close,   0x12A360
-.equ strcat,        0x1003F0
-.equ strcpy,        0x2FEB40
-.equ strlen,        0x2FEA94
-.equ liballoc,      0x157780
-.equ libdealloc,    0x167058
-.equ memcpy,        0x300680
-.equ crit_this,      0x11DAA4
-.equ crc,           0x6F47A4
 
 test:
      ldrh r1, [r0]
@@ -30,8 +16,7 @@ test:
      push {r0-r6,lr}
          ldr r2, storage
          call crit_this
-         ldr r3, =0x161F30 @nn::os::CriticalSection::Initialize()
-         blx r3
+         call crit_init
          
          ldr r0, sdmc_on
          ldr r0, [r0]
@@ -63,8 +48,7 @@ skip_sdmc_mount:
          ldr r1, [r0, #0x28]
          mov r0, r7
          sub r0, r0, #0x4
-         ldr r3, =0x181850 @lib::Resource::path_str(char* out, Resource* res)
-         blx r3
+         call path_str
          
          push {r0-r6,lr}
             mov r0, r7
@@ -165,7 +149,7 @@ exit_crc:
      pop  {r0-r8,lr}   
 exit:
      mov r0, #0x1
-     ldr lr, =0x159F0C
+     ldr lr, =exist_exit
      bx lr
      
 close_and_end:
@@ -178,7 +162,7 @@ close:
 continue:   
      mov r0, #0x0  
      
-     ldr lr, =0x159EC8
+     ldr lr, =exist_continue
      bx lr
     
 .pool
@@ -186,7 +170,6 @@ continue:
 storage: .long 0xC7CD00
 cache:     .long 0xC7CD84
 sdmc_on:     .long 0xC7CD80
-something_resource_lock: .long 0xC6A6B0
 
 .align 4
 cache_bin:   .asciz "sdmc:/saltysd/smash/cache.bin"
