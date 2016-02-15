@@ -47,7 +47,7 @@ exist_payload = readbytes("bin/exist.bin")
 sdsound = readbytes("bin/sdsound.bin")
     
 resource_lock = f.find(resource_lock_sig_legacy if f.find(resource_lock_sig ) == -1 else resource_lock_sig)
-resource_is_exist = f.find(resource_is_exist_sig_legacy if f.find(resource_is_exist_sig ) == -1 else resource_is_exist_sig)
+resource_is_exist = f.find(resource_is_exist_sig)
 resource_is_exist_exit = f.find(b2str([0xD0, 0x8D, 0xE2]), resource_is_exist)-0x1
 resource_data_size = f.find(resource_data_size_sig_legacy if f.find(resource_data_size_sig ) == -1 else resource_data_size_sig)
 resource_load = f.find(resource_load_sig_legacy if f.find(resource_load_sig ) == -1 else resource_load_sig)
