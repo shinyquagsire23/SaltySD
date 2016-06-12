@@ -6,7 +6,7 @@
 .endm
 
 .include "common.asm"
-.equ base_addr,     0xa41000
+.equ base_addr,     0xa35800
 
 test:
      push {r0-r6,lr}

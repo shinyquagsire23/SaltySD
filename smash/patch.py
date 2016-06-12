@@ -53,10 +53,10 @@ norm_hook_addr = f.find(norm_sig)
 decomp_hook_addr = f.find(decomp_sig)
 
 # TODO: Scan for these
-rf_payload_addr = 0xA42800-0x100000
-thread_payload_addr = 0xA44800-0x100000
-decomp_payload_addr = 0xA40800-0x100000
-norm_payload_addr = 0xa41000-0x100000
+rf_payload_addr = 0xA34000-0x100000
+thread_payload_addr = 0xA35000-0x100000
+decomp_payload_addr = 0xA35400-0x100000
+norm_payload_addr = 0xA35800-0x100000
 sdsound_addr = 0xA3D800-0x100000
 
 # Just convert f to bytes now that we're done searching things.

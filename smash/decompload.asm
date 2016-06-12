@@ -6,7 +6,7 @@
 .endm
 
 .include "common.asm"
-.equ base_addr,     0xA40800
+.equ base_addr,     0xA35400
 
 test:
      @Compensate for removing code
