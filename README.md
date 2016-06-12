@@ -4,7 +4,7 @@ SaltySD is a collection of modifications for 3DS ROMs which allows them to load 
 
 **Currently Supported Games**
 
- * Smash 3DS
+ * Smash 3DS (v0.9)
 
 Files are redirected into their own directory under sdmc:/saltysd/ based on the subdirectory name in the respository (ie Smash 3DS loads it's override files from sdmc:/saltysd/smash/). Patching instructions can be found in the PATCHING.md files in each subdirectory.
 

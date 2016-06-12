@@ -14,23 +14,30 @@ export LD	:=	$(CC)
 all: 
 	@mkdir -p bin
 	@python scan.py code.bin
-	@$(AS) "hooklock.asm"
-	@$(OBJCOPY) -O binary a.out "bin/hooklock.bin"
+	@cd resource_mod && $(MAKE)
+	@$(AS) "resource_mod/hookresource.asm"
+	@$(OBJCOPY) -O binary a.out "bin/hookresource.bin"
 	@rm a.out
-	@$(AS) "hookdatasize.asm"
-	@$(OBJCOPY) -O binary a.out "bin/hookdatasize.bin"
+	@$(AS) "resource_mod/incalloc.asm"
+	@$(OBJCOPY) -O binary a.out "bin/incalloc.bin"
 	@rm a.out
-	@$(AS) "hookexist.asm"
-	@$(OBJCOPY) -O binary a.out "bin/hookexist.bin"
+	@$(AS) "hookthread.asm"
+	@$(OBJCOPY) -O binary a.out "bin/hookthread.bin"
 	@rm a.out
-	@$(AS) "lock.asm"
-	@$(OBJCOPY) -O binary a.out "bin/lock.bin"
+	@$(AS) "hookdecomp.asm"
+	@$(OBJCOPY) -O binary a.out "bin/hookdecomp.bin"
 	@rm a.out
-	@$(AS) "datasize.asm"
-	@$(OBJCOPY) -O binary a.out "bin/datasize.bin"
+	@$(AS) "hooknorm.asm"
+	@$(OBJCOPY) -O binary a.out "bin/hooknorm.bin"
 	@rm a.out
-	@$(AS) "exist.asm"
-	@$(OBJCOPY) -O binary a.out "bin/exist.bin"
+	@$(AS) "threadload.asm"
+	@$(OBJCOPY) -O binary a.out "bin/threadload.bin"
+	@rm a.out
+	@$(AS) "decompload.asm"
+	@$(OBJCOPY) -O binary a.out "bin/decompload.bin"
+	@rm a.out
+	@$(AS) "normload.asm"
+	@$(OBJCOPY) -O binary a.out "bin/normload.bin"
 	@rm a.out
 	@$(AS) "sdsound.asm"
 	@$(OBJCOPY) -O binary a.out "bin/sdsound.bin"
