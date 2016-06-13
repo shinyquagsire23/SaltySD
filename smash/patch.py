@@ -66,6 +66,13 @@ f = insertreplace(f,rf_alloc,rf_alloc_addr)
 f = insertreplace(f,thread_hook,thread_hook_addr)
 f = insertreplace(f,norm_hook,norm_hook_addr)
 
+if r32(f, norm_hook_addr-0x58+3) & 0xFF != 0x9A:
+    print("It seems Shiny Quagsire was wrong to assume this address shift would always work.")
+    w.write(f)
+    exit(0)
+
+f = insertreplace(f,b2str([0xEA]),norm_hook_addr-0x58+3)
+
 f = insertreplace(f,rf_payload,rf_payload_addr)
 f = insertreplace(f,thread_payload,thread_payload_addr)
 f = insertreplace(f,norm_payload,norm_payload_addr)
