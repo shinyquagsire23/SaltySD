@@ -60,6 +60,7 @@ static u32 (*IFile_Close)(void *handle) = (void*)IFile_Close_ADDR;
 static void* (*crit_this)(void) = (void*)crit_this_ADDR;
 static void* (*crit_init)(void* crit_inst) = (void*)crit_init_ADDR;
 static u32 (*mount_sdmc)(char *mount_path) = (void*)mount_sdmc_ADDR;
+static u32 (*unmount_path)(char *mount_path) = (void*)unmount_path_ADDR;
 
 static u32 (*OpenDirectory)(void **handle, u16 *path) = (void*)OpenDirectory_ADDR;
 static u32 (*ReadDirectory)(u32 *num_dirs, void *handle, void *out, u32 num_entries_toload) = (void*)ReadDirectory_ADDR;
@@ -300,9 +301,9 @@ void _main(rf_header* header, void *contents)
                     if(IFile_Open(ifile_handle, sd_path, 1))
                     {
                         u32 size = IFile_GetSize(ifile_handle);
-                        if((*entries)[i].comp_size == (*entries)[i].decomp_size)
-                            (*entries)[i].comp_size = size;
-                            
+
+                        //By overriding the compressed size, our files are forced into only one hook
+                        (*entries)[i].comp_size = size;
                         (*entries)[i].decomp_size = size;
                     }
                     IFile_Close(ifile_handle);
@@ -325,5 +326,7 @@ void _main(rf_header* header, void *contents)
     free(files);
     free(extensions);
     free(blocks);
+    unmount_path("sd");
+    
     return;
 }

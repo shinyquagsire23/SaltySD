@@ -24,17 +24,11 @@ all:
 	@$(AS) "hookthread.asm"
 	@$(OBJCOPY) -O binary a.out "bin/hookthread.bin"
 	@rm a.out
-	@$(AS) "hookdecomp.asm"
-	@$(OBJCOPY) -O binary a.out "bin/hookdecomp.bin"
-	@rm a.out
 	@$(AS) "hooknorm.asm"
 	@$(OBJCOPY) -O binary a.out "bin/hooknorm.bin"
 	@rm a.out
 	@$(AS) "threadload.asm"
 	@$(OBJCOPY) -O binary a.out "bin/threadload.bin"
-	@rm a.out
-	@$(AS) "decompload.asm"
-	@$(OBJCOPY) -O binary a.out "bin/decompload.bin"
 	@rm a.out
 	@$(AS) "normload.asm"
 	@$(OBJCOPY) -O binary a.out "bin/normload.bin"

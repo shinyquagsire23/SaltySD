@@ -26,13 +26,10 @@ test:
         ldr r1, storage
         str r6, [r1, #0x18]
      pop {r0-r6,lr}
-     
+
      push {r0-r6,lr}
-         call crit_this
-         call crit_init
-         
-         ldr r0, =sdmc+base_addr
-         call mount_sdmc
+         ldr r0, [r8, #0x1C]
+         call crit_enter
      pop  {r0-r6,lr}
      
      push {r0-r8,lr}
@@ -65,6 +62,9 @@ test:
          mov r0, r8
          call IFile_Init
          
+         ldr r0, =sdmc+base_addr
+         call mount_sdmc
+         
          mov r0, r8
          mov r1, r7
          mov r2, #0x1
@@ -91,6 +91,11 @@ end_read_sd:
          call libdealloc
      pop  {r0-r8,lr}
      
+     push {r0-r6,lr}
+         ldr r0, [r8, #0x1C]
+         call crit_leave
+     pop  {r0-r6,lr}
+     
      b skip
      
 close_and_end:
@@ -99,7 +104,14 @@ close_and_end:
 close:
      mov r0, r8
      call libdealloc
+     ldr r0, =sdmc_+base_addr
+     call unmount_path
      pop  {r0-r8,lr}
+     
+     push {r0-r6,lr}
+         ldr r0, [r8, #0x1C]
+         call crit_leave
+     pop  {r0-r6,lr}
      
 exit:
      cmp r7, r0
@@ -121,7 +133,14 @@ close_with_existing:
         call IFile_Close   
      mov r0, r8
      call libdealloc
+     ldr r0, =sdmc_+base_addr
+     call unmount_path
      pop  {r0-r8,lr}
+     
+     push {r0-r6,lr}
+         ldr r0, [r8, #0x1C]
+         call crit_leave
+     pop  {r0-r6,lr}
      
      b exit
     
@@ -134,5 +153,7 @@ res_str:     .long 0xC7C700
 
 .align 4
 sdmc:       .asciz "sdmc:"
+.align 4
+sdmc_:      .asciz "sdmc"
 .align 4
 mod_path:   .asciz "sdmc:/saltysd/smash/"
