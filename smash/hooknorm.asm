@@ -3,7 +3,7 @@
 .arm
 
 lock_hook:
-    ldr r4, =0xA35800
-    blx r4
+    ldr r2, =0xA35800
+    blx r2
     
 .pool
