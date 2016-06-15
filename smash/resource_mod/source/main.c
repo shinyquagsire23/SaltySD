@@ -173,7 +173,7 @@ void debug_print(char *str)
 
 void printf(char *format, ...)
 {
-    char *str = malloc(0x400);
+    /*char *str = malloc(0x400);
 
     va_list argptr;
     va_start(argptr,format);
@@ -182,7 +182,7 @@ void printf(char *format, ...)
     
     dumb_strcat(str, "");
     debug_print(str);
-    free(str);
+    free(str);*/
 }
 
 void _main(rf_header* header, void *contents)
