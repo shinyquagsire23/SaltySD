@@ -1,4 +1,5 @@
 #include <3ds.h>
+#include <stdarg.h>
 #include "../../common.h"
 
 typedef struct __attribute__((__packed__))
@@ -50,12 +51,7 @@ static void (*free)(void* ptr) = (void*)libdealloc_ADDR;
 static void (*memclr)(void *ptr, size_t size) = (void*)memclr_ADDR;
 static int (*strlen)(char *str) = (void*)strlen_ADDR;
 static int (*strcmp)(const char *str1, const char *str2) = (void*)strcmp_ADDR;
-
-static u32 (*IFile_Init)(void *handle) = (void*)IFile_Init_ADDR;
-static u32 (*IFile_Open)(void *handle, char *path, u32 mode) = (void*)IFile_Open_ADDR;
-static u32 (*IFile_Read)(void *handle, void *dest, size_t size, u32 *bytes_read) = (void*)IFile_Read_ADDR;
-static u32 (*IFile_GetSize)(void *handle) = (void*)IFile_GetSize_ADDR;
-static u32 (*IFile_Close)(void *handle) = (void*)IFile_Close_ADDR;
+static int (*vsnprintf)(char * s, size_t n, const char * format, va_list arg ) = (void*)0x102434+1;
 
 static void* (*crit_this)(void) = (void*)crit_this_ADDR;
 static void* (*crit_init)(void* crit_inst) = (void*)crit_init_ADDR;
@@ -88,6 +84,18 @@ char *dumb_strncat(char *dest, char *src, u32 len)
 char *dumb_strcat(char *dest, char *src)
 {
     return dumb_strncat(dest, src, strlen(src));
+}
+
+char *dumb_strcpy(char *dest, char *src)
+{
+    dest[0] = 0;
+    return dumb_strcat(dest, src);
+}
+
+char *dumb_strncpy(char *dest, char *src, size_t len)
+{
+    dest[0] = 0;
+    return dumb_strncat(dest, src, len);
 }
 
 u16 *dumb_wcsncat(u16 *dest, u16 *src, u32 len)
@@ -127,6 +135,54 @@ char *dumb_wcstombs(char *dest, u16 *src)
         count++;
     }
     return dest;
+}
+
+u32 len_to(char *str, char chr)
+{
+    u32 count = 0;
+    while(1)
+    {
+        if(str[count] == 0)
+            return -1;
+         
+        if(str[count++] == chr)
+            break;
+    }
+    return count;
+}
+
+u32 count_chars(char *str, char chr)
+{
+    u32 i = 0;
+    u32 count = 0;
+    while(1)
+    {
+        if(str[i] == 0)
+            break;
+         
+        if(str[i++] == chr)
+            count++;
+    }
+    return count;
+}
+
+void debug_print(char *str)
+{
+    __asm__("svc 0x3D");
+}
+
+void printf(char *format, ...)
+{
+    char *str = malloc(0x400);
+
+    va_list argptr;
+    va_start(argptr,format);
+    vsnprintf(str, 0x400, format, argptr);
+    va_end(argptr);
+    
+    dumb_strcat(str, "");
+    debug_print(str);
+    free(str);
 }
 
 void _main(rf_header* header, void *contents)
@@ -185,6 +241,7 @@ void _main(rf_header* header, void *contents)
     
     u16 **dirs = malloc(0x1000*sizeof(u16*));
     char **files = malloc(0x4000*sizeof(char*));
+    u32 *file_sizes = malloc(0x4000*sizeof(u32));
     dirs[0] = dir_path;
     
     for(int i = 0; i < num_directories; i++)
@@ -213,11 +270,17 @@ void _main(rf_header* header, void *contents)
                 else
                 {
                     char *file = malloc(0x101);
-                    dumb_wcstombs(file, dirs[i]+sizeof("sd:/saltysd/smash/")-1);
-                    dumb_strcat(file, "/");
+                    file[0] = 0;
+                    if(i != 0)
+                    {
+                        dumb_wcstombs(file, dirs[i]+sizeof("sd:/saltysd/smash/")-1);
+                        dumb_strcat(file, "/");
+                    }
                     dumb_wcstombs(file+strlen(file), dir_entry->path);
+                    //printf("List: %s", file);
                     
                     files[num_files] = file;
+                    file_sizes[num_files] = dir_entry->file_size & 0xFFFFFFFF;
                     num_files++;
                 }
             }
@@ -231,12 +294,15 @@ void _main(rf_header* header, void *contents)
     
     char *full_name = malloc(0x400);
     memclr(full_name, 0x400);
-    void *ifile_handle = malloc(0x40);
+    u32 last_str_addr = 0;
     for(int i = 0; i < header->resourceentry_amt; i++)
     {
         u32 string_offset_all = (*entries)[i].string_offs;
         u32 string_offset = string_offset_all & 0x000FFFFF;
         u8 extension = (string_offset_all >> 24);
+        
+        if(string_offset > last_str_addr)
+            last_str_addr = string_offset;
         
         u8 nesting_level = (*entries)[i].flags & 0xFF;
         if(nesting_level <= 1)
@@ -288,40 +354,229 @@ void _main(rf_header* header, void *contents)
                     free(files[j]);
                     files[j] = NULL;
                     
-                    IFile_Init(ifile_handle);
-                    crit_init(crit_this());
-                    mount_sdmc("sd:");
-                
-                    char *sd_path = malloc(0x101);
-                    memclr(sd_path, 0x101);
-                    
-                    dumb_strcat(sd_path, "sd:/saltysd/smash/");
-                    dumb_strcat(sd_path, full_name);
-                    
-                    if(IFile_Open(ifile_handle, sd_path, 1))
-                    {
-                        u32 size = IFile_GetSize(ifile_handle);
-
-                        //By overriding the compressed size, our files are forced into only one hook
-                        (*entries)[i].comp_size = size;
-                        (*entries)[i].decomp_size = size;
-                    }
-                    IFile_Close(ifile_handle);
-                    free(sd_path);
+                    //By overriding the compressed size, our files are forced into only one hook
+                    (*entries)[i].comp_size = file_sizes[j];
+                    (*entries)[i].decomp_size = file_sizes[j];
                 }
             }
         }
     }
     
-    //TODO: New Files!
+    //Add new files to RF
+    last_str_addr = ((*entries)[header->resourceentry_amt-1].string_offs & 0xFFFFF) + 0x80;
     for(int i = 0; i < num_files; i++)
     {
-        //Free all of our filenames not in RF
-        if(files[i] != NULL)
-            free(files[i]);
+        if(files[i] == NULL)
+            continue;
+        
+        printf("Adding file %s", files[i]);
+        
+        u32 entry_to_shift = 1; 
+        u8 entered_packed = 0;
+        u8 level_target = 1;
+        char *substr = malloc(0x101);
+        
+        u32 seed_len = len_to(files[i], '/');
+        if(seed_len == -1)
+        {
+            entry_to_shift = header->resourceentry_amt;
+
+            dumb_strcpy(substr, files[i]);
+            seed_len = strlen(substr);
+        }
+        else
+            dumb_strncpy(substr, files[i], seed_len);
+        
+        for(; entry_to_shift < header->resourceentry_amt; entry_to_shift++)
+        {
+            u8 nesting_level = (*entries)[entry_to_shift].flags & 0xFF;
+            
+            //We're a file but the next object at the same level is a folder, break here
+            if(level_target == nesting_level && len_to(substr, '/') == -1 && (*entries)[entry_to_shift].flags & 0x200)
+                break;
+            
+            //We're a file and the next entry isn't even at the same nesting level, break    
+            if(level_target != nesting_level && len_to(substr, '/') == -1)
+                break;
+            
+            //We're a higher folder and we descended a folder, obviously this folder is new
+            if(level_target > nesting_level && len_to(substr, '/') != -1)
+                break;
+            
+            //Don't look at deeper folders while trying to find our current level
+            if(level_target < nesting_level && len_to(substr, '/') != -1)
+                continue;
+            
+            //We're a folder, pay no mind to the file order since files come before folders
+            if(len_to(substr, '/') != -1 && !((*entries)[entry_to_shift].flags & 0x200))
+                continue;
+        
+            u32 string_offset_all = (*entries)[entry_to_shift].string_offs;
+            u32 string_offset = string_offset_all & 0x000FFFFF;
+
+            char *string = blocks[string_offset / 0x2000] + (string_offset & 0x1FFF);
+            
+            if(string_offset_all & 0x00800000)
+            {
+                u16 reference = *(u16*)string;
+                u32 ref_len = (reference & 0x1f) + 4;
+                u32 ref_reloff = (reference & 0xe0) >> 6 << 8 | (reference >> 8);
+                u32 final_offset = string_offset - ref_reloff;
+                char *ref_string = blocks[final_offset / 0x2000] + (final_offset & 0x1FFF);
+                
+                dumb_strncpy(full_name, ref_string, ref_len);
+                dumb_strcat(full_name, string+sizeof(u16));
+            }
+            else
+                dumb_strcpy(full_name, string);         
+            
+            //Folder is part of our path, advance level target and look for next folder
+            //or the spot to place our file    
+            if(!strcmp(full_name, substr) && len_to(substr, '/') != -1)
+            {
+                printf("%x %x %s", entry_to_shift, level_target, full_name);
+                u32 len = len_to(files[i]+seed_len, '/');
+                if(len != -1)
+                {
+                    dumb_strncpy(substr, files[i]+seed_len, len);
+                    seed_len += len;
+                }
+                else
+                {
+                    dumb_strcpy(substr, files[i]+seed_len);
+                    seed_len += strlen(substr);
+                }
+                
+                if((*entries)[entry_to_shift].flags & 0x1000)
+                {
+                    entered_packed = 1;
+                    printf("entered packed"); 
+                }   
+                level_target++;
+            }
+            else if(strcmp(full_name, substr) > 0 && level_target != 1)
+            {
+                //Greater alphabetically, break here
+                printf("larger %x %x %s", entry_to_shift, level_target, full_name);
+                break;
+            }
+        }
+        
+        printf("entry comp %x %x %x", &(*entries)[entry_to_shift], &(*entries)[header->resourceentry_amt-1], (u32)&(*entries)[header->resourceentry_amt-1] - (u32)&(*entries)[entry_to_shift]);
+        u32 entries_to_make = count_chars(files[i]+seed_len-strlen(substr), '/')+1;
+        
+        printf("adding %x entries after %x (%s)", entries_to_make, entry_to_shift, files[i]+seed_len-strlen(substr));
+        
+        if(entry_to_shift != header->resourceentry_amt)
+            memmove(&(*entries)[entry_to_shift+entries_to_make], &(*entries)[entry_to_shift], (u32)&(*entries)[header->resourceentry_amt] - (u32)&(*entries)[entry_to_shift]);
+            
+        memclr(&(*entries)[entry_to_shift], 0x18*entries_to_make);
+        
+        //Create all our new folders
+        for(int j = 0; j < entries_to_make-1; j++)
+        {
+            //Stay within our blocks
+            if((last_str_addr & 0x1FFF) + strlen(substr) >= 0x2000)
+                last_str_addr = (last_str_addr + 0x1FFF) & (0xFFFFFFFF - 0x1FFF);
+        
+            char *new_str = blocks[last_str_addr / 0x2000] + (last_str_addr & 0x1FFF);
+            dumb_strcpy(new_str, substr);
+            printf("folder: %s", new_str);
+        
+            (*entries)[entry_to_shift].chunk_offs = (*entries)[entry_to_shift-1].chunk_offs;
+            (*entries)[entry_to_shift].string_offs = last_str_addr;
+            (*entries)[entry_to_shift].comp_size = 0x80;
+            (*entries)[entry_to_shift].decomp_size = 0x80;
+            (*entries)[entry_to_shift].timestamp = 0;
+            (*entries)[entry_to_shift].flags = 0xA00 | level_target;
+            last_str_addr += strlen(substr)+1;
+            header->resourceentry_amt++;
+            header->entrysection_size += 0x18;
+            entry_to_shift++;
+            
+            printf("%x %x %s", entry_to_shift-1, level_target, substr);
+            
+            u32 len = len_to(files[i]+seed_len, '/');
+            if(len != -1)
+            {
+                dumb_strncpy(substr, files[i]+seed_len, len);
+                seed_len += len;
+            }
+            else
+            {
+                dumb_strcpy(substr, files[i]+seed_len);
+            }
+            level_target++;
+        }
+        
+        u32 len = len_to(substr, '.');
+        char *file_ext = malloc(0x10);
+        if(len != -1)
+        {
+            dumb_strcpy(file_ext, &substr[len-1]);
+        
+            substr[len-1] = 0;
+            seed_len += len-1;
+        }
+
+        //Find our extension ID
+        printf("%x %x %s", entry_to_shift, level_target, substr);
+        u8 ext_num = 0;
+        
+        for(int j = 0; j < *(u32*)extensions_block; j++)
+        {
+            if(!strcmp(extensions[j], file_ext))
+            {
+                printf("extnum %x %s", j, extensions[j]);
+                ext_num = j;
+                break;
+            }
+        }
+        
+        //New extension...
+        if(ext_num == 0 && len && *(u32*)extensions_block < 0x3E)
+        {
+            //Stay within our blocks
+            if((last_str_addr & 0x1FFF) + strlen(substr) >= 0x2000)
+                last_str_addr = (last_str_addr + 0x1FFF) & (0xFFFFFFFF - 0x1FFF);
+                
+            char *new_str = blocks[last_str_addr / 0x2000] + (last_str_addr & 0x1FFF);
+            dumb_strcpy(new_str, file_ext);
+            printf("adding ext %s", new_str);
+            
+            *(u32*)(extensions_block + sizeof(u32) + *(u32*)extensions_block*sizeof(u32)) = last_str_addr;
+            ext_num = *(u32*)extensions_block;
+            extensions[*(u32*)extensions_block] = new_str;
+            *(u32*)extensions_block += 1;
+            
+            last_str_addr += strlen(new_str)+1;
+        }
+        
+        free(file_ext);
+        
+        //Stay within our blocks
+        if((last_str_addr & 0x1FFF) + strlen(substr) >= 0x2000)
+            last_str_addr = (last_str_addr + 0x1FFF) & (0xFFFFFFFF - 0x1FFF);
+        
+        char *new_str = blocks[last_str_addr / 0x2000] + (last_str_addr & 0x1FFF);
+        dumb_strcpy(new_str, substr);
+        
+        //Add new file entry
+        (*entries)[entry_to_shift].chunk_offs = (*entries)[entry_to_shift-1].chunk_offs;
+        (*entries)[entry_to_shift].string_offs = last_str_addr | ext_num << 24;
+        (*entries)[entry_to_shift].comp_size = file_sizes[i];
+        (*entries)[entry_to_shift].decomp_size = file_sizes[i];
+        (*entries)[entry_to_shift].timestamp = 0;
+        (*entries)[entry_to_shift].flags = 0xC00 | level_target;
+        last_str_addr += strlen(substr)+1;
+        header->resourceentry_amt++;
+        header->entrysection_size += 0x18;
+        
+        printf("flags: %x", (*entries)[entry_to_shift].flags);
+        
+        free(files[i]);
     }
     
-    free(ifile_handle);
     free(full_name);
     free(files);
     free(extensions);
