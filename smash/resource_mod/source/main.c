@@ -483,7 +483,13 @@ void _main(rf_header* header, void *contents)
             dumb_strcpy(new_str, substr);
             printf("folder: %s", new_str);
         
-            (*entries)[entry_to_shift].chunk_offs = (*entries)[entry_to_shift-1].chunk_offs;
+            int back_count = 1;
+            do
+            {
+                (*entries)[entry_to_shift].chunk_offs = (*entries)[entry_to_shift-back_count].chunk_offs;
+                back_count++;
+            }
+            while((*entries)[entry_to_shift-back_count].chunk_offs == 0);
             (*entries)[entry_to_shift].string_offs = last_str_addr;
             (*entries)[entry_to_shift].comp_size = 0x80;
             (*entries)[entry_to_shift].decomp_size = 0x80;
@@ -562,7 +568,13 @@ void _main(rf_header* header, void *contents)
         dumb_strcpy(new_str, substr);
         
         //Add new file entry
-        (*entries)[entry_to_shift].chunk_offs = (*entries)[entry_to_shift-1].chunk_offs;
+        int back_count = 1;
+        do
+        {
+            (*entries)[entry_to_shift].chunk_offs = (*entries)[entry_to_shift-back_count].chunk_offs;
+            back_count++;
+        }
+        while((*entries)[entry_to_shift-back_count].chunk_offs == 0);
         (*entries)[entry_to_shift].string_offs = last_str_addr | ext_num << 24;
         (*entries)[entry_to_shift].comp_size = file_sizes[i];
         (*entries)[entry_to_shift].decomp_size = file_sizes[i];
