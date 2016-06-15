@@ -51,7 +51,7 @@ static void (*free)(void* ptr) = (void*)libdealloc_ADDR;
 static void (*memclr)(void *ptr, size_t size) = (void*)memclr_ADDR;
 static int (*strlen)(char *str) = (void*)strlen_ADDR;
 static int (*strcmp)(const char *str1, const char *str2) = (void*)strcmp_ADDR;
-static int (*vsnprintf)(char * s, size_t n, const char * format, va_list arg ) = (void*)0x102434+1;
+static int (*vsnprintf)(char * s, size_t n, const char * format, va_list arg ) = (void*)vsnprintf_ADDR;
 
 static void* (*crit_this)(void) = (void*)crit_this_ADDR;
 static void* (*crit_init)(void* crit_inst) = (void*)crit_init_ADDR;
@@ -173,7 +173,7 @@ void debug_print(char *str)
 
 void printf(char *format, ...)
 {
-    /*char *str = malloc(0x400);
+    char *str = malloc(0x400);
 
     va_list argptr;
     va_start(argptr,format);
@@ -182,7 +182,7 @@ void printf(char *format, ...)
     
     dumb_strcat(str, "");
     debug_print(str);
-    free(str);*/
+    free(str);
 }
 
 void _main(rf_header* header, void *contents)
@@ -262,7 +262,7 @@ void _main(rf_header* header, void *contents)
                     new_dir[0] = 0;
                     
                     dumb_wcscat(new_dir, dirs[i]);
-                    dumb_wcscat(new_dir, L"/");
+                    dumb_wcscat(new_dir, (u16*)L"/");
                     dumb_wcscat(new_dir, dir_entry->path);
                     dirs[num_directories] = new_dir;
                     num_directories++;
@@ -584,7 +584,7 @@ void _main(rf_header* header, void *contents)
         header->resourceentry_amt++;
         header->entrysection_size += 0x18;
         
-        printf("flags: %x", (*entries)[entry_to_shift].flags);
+        printf("flags: %x, %s", (*entries)[entry_to_shift].flags, entered_packed ? "entered packed" : "didn't enter packed");
         
         free(files[i]);
     }
