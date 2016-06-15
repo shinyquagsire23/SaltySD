@@ -9,25 +9,11 @@
 .equ base_addr,     0xa35800
 
 test:
-     push {r0-r6,lr}
-         ldr r3, storage
-         str r4, [r3, #0x34]
-         ldrh R0, [R4]
-         strh R0, [r3,#0x8]
-         ldr  R1, [r3,#0x8]
-         mov  R0, r3
-         call referenced_by_ls_init
-         ldr r3, storage
-         str r0, [r3, #0x38]
-     pop  {r0-r6,lr}
-     
      @ Stash to-load address
      push {r0-r6,lr}
-        ldr r1, storage
-        str r6, [r1, #0x18]
-     pop {r0-r6,lr}
+         ldr r1, storage
+         str r6, [r1, #0x18]
 
-     push {r0-r6,lr}
          ldr r0, [r8, #0x1C]
          call crit_enter
      pop  {r0-r6,lr}
@@ -127,29 +113,10 @@ skip:
     mov r0, r6
     add lr, lr, #0x14
     bx lr
-     
-close_with_existing:
-        mov r0, r8
-        call IFile_Close   
-     mov r0, r8
-     call libdealloc
-     ldr r0, =sdmc_+base_addr
-     call unmount_path
-     pop  {r0-r8,lr}
-     
-     push {r0-r6,lr}
-         ldr r0, [r8, #0x1C]
-         call crit_leave
-     pop  {r0-r6,lr}
-     
-     b exit
     
 .pool
 
 storage: .long 0xC7CD00
-sdmc_on:     .long 0xC7CD80
-cache:     .long 0xC7CD84
-res_str:     .long 0xC7C700
 
 .align 4
 sdmc:       .asciz "sdmc:"

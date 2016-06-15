@@ -13,35 +13,12 @@ test:
      sub sp, sp, #0x8
      mov r6, r0
      ldr r0, [r2, #0x4]
-     
-     push {r0-r6,lr}
-         ldr r4, storage
-         str r2, [r4, #0x34]
-         mov r4, r1
-         ldr r3, storage
-         ldrh R0, [R2]
-         strh R0, [r3,#0x8]
-         ldr  R1, [r3,#0x8]
-         mov  R0, r3
-         call referenced_by_ls_init
-         ldr r3, storage
-         str r0, [r3, #0x38]
-     pop  {r0-r6,lr}
-     
+
      @ Stash to-load address
      push {r0-r6,lr}
         ldr r4, storage
-        str r1, [r4, #0x30]
         str r1, [r4, #0x18]
      pop {r0-r6,lr}
-     
-     push {r0-r6,lr}
-         call crit_this
-         call crit_init
-         
-         ldr r0, =sdmc+base_addr
-         call mount_sdmc
-     pop  {r0-r6,lr}
      
      push {r0-r8,lr}
          ldr r0, storage
@@ -74,6 +51,9 @@ test:
          mov r0, r8
          call IFile_Init
          
+         ldr r0, =sdmc+base_addr
+         call mount_sdmc
+         
          mov r0, r8
          mov r1, r7
          mov r2, #0x1
@@ -97,6 +77,8 @@ end_read_sd:
          call IFile_Close 
          mov r0, r8
          call libdealloc
+         ldr r0, =sdmc_+base_addr
+        call unmount_path
      pop  {r0-r8,lr}
      
      b skip
@@ -107,6 +89,8 @@ close_and_end:
 close:
      mov r0, r8
      call libdealloc
+     ldr r0, =sdmc_+base_addr
+     call unmount_path
      pop  {r0-r8,lr}
      
 exit:
@@ -119,15 +103,6 @@ skip:
     
 skip_end:
     bx lr
-     
-close_with_existing:
-        mov r0, r8
-        call IFile_Close   
-     mov r0, r8
-     call libdealloc
-     pop  {r0-r8,lr}
-     
-     b exit
     
 .pool
 
@@ -135,5 +110,7 @@ storage: .long 0xC7CD00
 
 .align 4
 sdmc:       .asciz "sdmc:"
+.align 4
+sdmc_:      .asciz "sdmc"
 .align 4
 mod_path:   .asciz "sdmc:/saltysd/smash/"
