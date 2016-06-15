@@ -89,8 +89,6 @@ f = insertreplace(f,thread_payload,thread_payload_addr)
 f = insertreplace(f,norm_payload,norm_payload_addr)
 f = insertreplace(f,sdsound,sdsound_addr)
 
-f = insertreplace(f,"ui/replace/idk/asdf.shbin\x00", 0xB8BA2C-0x100000)
-
 # This should be a pointer, if it isn't this is likely a pre-update version or Demo.
 if(r32(f,sdsound_func_addr+0x1C) & 0xFF000000 != 0):
     print("This is likely a version of Smash which doesn't utilize update data (1.0.1, Demo)!\nSound override is not supported with these versions.")
