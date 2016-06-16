@@ -77,8 +77,6 @@ end_read_sd:
          call IFile_Close 
          mov r0, r8
          call libdealloc
-         ldr r0, =sdmc_+base_addr
-        call unmount_path
      pop  {r0-r8,lr}
      
      b skip
@@ -89,8 +87,6 @@ close_and_end:
 close:
      mov r0, r8
      call libdealloc
-     ldr r0, =sdmc_+base_addr
-     call unmount_path
      pop  {r0-r8,lr}
      
 exit:

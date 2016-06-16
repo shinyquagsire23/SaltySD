@@ -90,8 +90,6 @@ close_and_end:
 close:
      mov r0, r8
      call libdealloc
-     ldr r0, =sdmc_+base_addr
-     call unmount_path
      pop  {r0-r8,lr}
      
      push {r0-r6,lr}
