@@ -13,6 +13,14 @@ test:
      sub sp, sp, #0x8
      mov r6, r0
      ldr r0, [r2, #0x4]
+     
+     @ Check RF flags
+     push {r0-r6,lr}
+        call get_rf_struct
+        ldr r0, [r0, #0x8]
+        tst r0, #0x8000 @ does this file have an SD override?
+     pop {r0-r6,lr}
+     bne exit
 
      @ Stash to-load address
      push {r0-r6,lr}

@@ -357,6 +357,7 @@ void _main(rf_header* header, void *contents)
                     //By overriding the compressed size, our files are forced into only one hook
                     (*entries)[i].comp_size = file_sizes[j];
                     (*entries)[i].decomp_size = file_sizes[j];
+                    (*entries)[i].flags |= 0x8000;
                 }
             }
         }
@@ -488,7 +489,7 @@ void _main(rf_header* header, void *contents)
             (*entries)[entry_to_shift].comp_size = 0x80;
             (*entries)[entry_to_shift].decomp_size = 0x80;
             (*entries)[entry_to_shift].timestamp = 0;
-            (*entries)[entry_to_shift].flags = 0xA00 | level_target;
+            (*entries)[entry_to_shift].flags = 0x8000 | 0xA00 | level_target;
             last_str_addr += strlen(substr)+1;
             header->resourceentry_amt++;
             header->entrysection_size += 0x18;
@@ -567,7 +568,7 @@ void _main(rf_header* header, void *contents)
         (*entries)[entry_to_shift].comp_size = file_sizes[i];
         (*entries)[entry_to_shift].decomp_size = file_sizes[i];
         (*entries)[entry_to_shift].timestamp = 0;
-        (*entries)[entry_to_shift].flags = 0xC00 | level_target;
+        (*entries)[entry_to_shift].flags = 0x8000 | 0xC00 | level_target;
         last_str_addr += strlen(substr)+1;
         header->resourceentry_amt++;
         header->entrysection_size += 0x18;

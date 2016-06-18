@@ -9,6 +9,15 @@
 .equ base_addr,     0xa35800
 
 test:
+     @ Check RF flags
+     push {r0-r6,lr}
+        ldr r0, [r4, #0x4]
+        call get_rf_struct
+        ldr r0, [r0, #0x8]
+        tst r0, #0x8000 @ does this file have an SD override?
+     pop {r0-r6,lr}
+     bne exit
+
      @ Stash to-load address
      push {r0-r6,lr}
          ldr r1, storage
