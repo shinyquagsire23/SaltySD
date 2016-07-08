@@ -435,6 +435,9 @@ void _main(rf_header* header, void *contents)
             //or the spot to place our file    
             if(!strcmp(full_name, substr) && len_to(substr, '/') != -1)
             {
+                //Remove debug/trashed flag if it exists.
+                (*entries)[entry_to_shift].flags &= (0xFFFFFFFF - 0x2000);
+            
                 printf("%x %x %s", entry_to_shift, level_target, full_name);
                 u32 len = len_to(files[i]+seed_len, '/');
                 if(len != -1)
