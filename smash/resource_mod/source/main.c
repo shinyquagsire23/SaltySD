@@ -360,10 +360,18 @@ void _main(rf_header* header, void *contents)
             if(revoke_buf[i] == '\n')
             {
                 revoke_buf[i] = 0;
+                
+                //I don't know how these Windows newlines work, but they're annoying
+                //and I hate them.
+                if(revoke_buf[i-1] == '\r')
+                {
+                    revoke_buf[i-1] = 0;
+                }
                 if(revoke_buf[i+1] == '\r')
                 {
                     revoke_buf[++i] = 0;
                 }
+                
                 if(strlen(last_file) > 0)
                     revoked_files[revoke_active_count++] = last_file;
                 last_file = &revoke_buf[i+1];
