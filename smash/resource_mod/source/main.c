@@ -362,7 +362,7 @@ void _main(rf_header* header, void *contents)
                 revoke_buf[i] = 0;
                 if(revoke_buf[i+1] == '\r')
                 {
-                    revoke_buf[i++] = 0;
+                    revoke_buf[++i] = 0;
                 }
                 if(strlen(last_file) > 0)
                     revoked_files[revoke_active_count++] = last_file;
@@ -421,29 +421,29 @@ void _main(rf_header* header, void *contents)
             
         dumb_strcat(full_name, extensions[extension]);
         
+        bool existing_revoked = false;
+            
+        //Check the file against our revoked list
+        if(revoked_files)
+        {
+            for(int j = 0; j < revoke_count; j++)
+            {
+                if(!strcmp(full_name, revoked_files[j]))
+                {
+                    existing_revoked = true;
+                    break;
+                }
+            }
+                
+            if(existing_revoked)
+            {
+                (*entries)[i].string_offs &= 0xFFF00000; //If it's revoked, revoke its path name
+            }
+        }
+        
         //If we have a file, adjust file sizes
         if(full_name[strlen(full_name)-1] != '/')
         {
-            bool existing_revoked = false;
-            
-            //Check the file against our revoked list
-            if(revoked_files)
-            {
-                for(int j = 0; j < revoke_count; j++)
-                {
-                    if(!strcmp(full_name, revoked_files[j]))
-                    {
-                        existing_revoked = true;
-                        break;
-                    }
-                }
-                
-                if(existing_revoked)
-                {
-                    (*entries)[i].string_offs &= 0xFFF00000; //If it's revoked, revoke its path name
-                }
-            }
-            
             for(int j = 0; j < num_files; j++)
             {
                 if(files[j] == NULL)
