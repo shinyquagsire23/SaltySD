@@ -13,7 +13,7 @@ CC = arm-none-eabi-gcc
 LINK = arm-none-eabi-ld
 AS = arm-none-eabi-as
 OBJCOPY = arm-none-eabi-objcopy
-CFLAGS += -Wall -std=c99 -march=armv6 -O2 -I"$(CTRULIB)/include" -I$(DEVKITPRO)/libnds/include
+CFLAGS += -g -Wall -std=c99 -march=armv6 -O2 -I"$(CTRULIB)/include" -I$(DEVKITPRO)/libnds/include
 LDFLAGS += --script=ccd00.ld -L"$(CTRULIB)/lib"
 
 CFILES = $(wildcard source/*.c)

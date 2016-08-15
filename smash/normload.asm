@@ -6,7 +6,7 @@
 .endm
 
 .include "common.asm"
-.equ base_addr,     0xa35800
+.equ base_addr,     0xa36800
 
 test:
      @ Check RF flags

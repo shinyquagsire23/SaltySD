@@ -53,6 +53,12 @@ static int (*strlen)(char *str) = (void*)strlen_ADDR;
 static int (*strcmp)(const char *str1, const char *str2) = (void*)strcmp_ADDR;
 static int (*vsnprintf)(char * s, size_t n, const char * format, va_list arg ) = (void*)vsnprintf_ADDR;
 
+static u32 (*IFile_Init)(void *handle) = (void*)IFile_Init_ADDR;
+static u32 (*IFile_Open)(void *handle, char *path, u32 mode) = (void*)IFile_Open_ADDR;
+static u32 (*IFile_Read)(void *handle, void *dest, size_t size, u32 *bytes_read) = (void*)IFile_Read_ADDR;
+static u32 (*IFile_GetSize)(void *handle) = (void*)IFile_GetSize_ADDR;
+static u32 (*IFile_Close)(void *handle) = (void*)IFile_Close_ADDR;
+
 static void* (*crit_this)(void) = (void*)crit_this_ADDR;
 static void* (*crit_init)(void* crit_inst) = (void*)crit_init_ADDR;
 static u32 (*mount_sdmc)(char *mount_path) = (void*)mount_sdmc_ADDR;
@@ -228,6 +234,11 @@ void _main(rf_header* header, void *contents)
         extensions[i] = string;
     }
     
+    void *ifile_handle = malloc(0x40);
+    char *revoke_buf = NULL;
+    char **revoked_files = NULL;
+    u32 revoke_total_size = 0;
+    int revoke_count = 0;
     crit_init(crit_this());
     mount_sdmc("sd:");
     
@@ -271,6 +282,7 @@ void _main(rf_header* header, void *contents)
                 {
                     char *file = malloc(0x101);
                     file[0] = 0;
+                    
                     if(i != 0)
                     {
                         dumb_wcstombs(file, dirs[i]+sizeof("sd:/saltysd/smash/")-1);
@@ -278,6 +290,44 @@ void _main(rf_header* header, void *contents)
                     }
                     dumb_wcstombs(file+strlen(file), dir_entry->path);
                     //printf("List: %s", file);
+                    
+                    if(i == 0)
+                    {
+                        //Check for revoke*.txt files
+                        char *revokenametest = malloc(0x101); memclr(revokenametest, 0x101);
+                        memcpy(revokenametest, file, strlen("revoke"));
+                        
+                        if(!strcmp(revokenametest, "revoke") && !strcmp(file+strlen(file)-4, ".txt"))
+                        {
+                            char *temp_real_path = malloc(0x101);
+                            dumb_strcpy(temp_real_path, "sd:/saltysd/smash/");
+                            dumb_strcat(temp_real_path, file);
+                            IFile_Init(ifile_handle);
+                            if(IFile_Open(ifile_handle, temp_real_path, 1))
+                            {
+                                u32 revoke_size = IFile_GetSize(ifile_handle);
+                                u32 revoke_read = 0;
+                                void *revoke_temp_buf = malloc(revoke_size+2);
+                                IFile_Read(ifile_handle, revoke_temp_buf, revoke_size, &revoke_read);
+                                IFile_Close(ifile_handle);
+                                
+                                void *new_alloc = malloc(revoke_size+revoke_total_size+2);
+                                if(revoke_buf)
+                                    memcpy(new_alloc, revoke_buf, revoke_size);
+                                revoke_buf = new_alloc;
+                                    
+                                revoke_total_size = revoke_size+revoke_total_size+2;
+                                    
+                                dumb_strcat(revoke_buf, "\n");
+                                dumb_strcat(revoke_buf, revoke_temp_buf);
+                                free(revoke_temp_buf);
+                            }
+                            free(temp_real_path);
+                            free(revokenametest);
+                            continue;
+                        }
+                        free(revokenametest);
+                    }
                     
                     files[num_files] = file;
                     file_sizes[num_files] = dir_entry->file_size & 0xFFFFFFFF;
@@ -291,6 +341,36 @@ void _main(rf_header* header, void *contents)
     
     free(dirs);
     free(dir_entries);
+    
+    //Parse revoked files
+    if(revoke_buf)
+    {
+        revoke_count = 1;
+        int revoke_active_count = 0;
+        for(int i = 0; i < revoke_total_size; i++)
+        {
+            if(revoke_buf[i] == '\n')
+                revoke_count++;
+        }
+        revoked_files = malloc(revoke_count*sizeof(char*));
+        
+        char *last_file = revoke_buf;
+        for(int i = 0; i < revoke_total_size; i++)
+        {
+            if(revoke_buf[i] == '\n')
+            {
+                revoke_buf[i] = 0;
+                if(revoke_buf[i+1] == '\r')
+                {
+                    revoke_buf[i++] = 0;
+                }
+                if(strlen(last_file) > 0)
+                    revoked_files[revoke_active_count++] = last_file;
+                last_file = &revoke_buf[i+1];
+            }
+        }
+        revoke_count = revoke_active_count;
+    }
     
     char *full_name = malloc(0x400);
     memclr(full_name, 0x400);
@@ -344,6 +424,26 @@ void _main(rf_header* header, void *contents)
         //If we have a file, adjust file sizes
         if(full_name[strlen(full_name)-1] != '/')
         {
+            bool existing_revoked = false;
+            
+            //Check the file against our revoked list
+            if(revoked_files)
+            {
+                for(int j = 0; j < revoke_count; j++)
+                {
+                    if(!strcmp(full_name, revoked_files[j]))
+                    {
+                        existing_revoked = true;
+                        break;
+                    }
+                }
+                
+                if(existing_revoked)
+                {
+                    (*entries)[i].string_offs &= 0xFFF00000; //If it's revoked, revoke its path name
+                }
+            }
+            
             for(int j = 0; j < num_files; j++)
             {
                 if(files[j] == NULL)
@@ -354,10 +454,13 @@ void _main(rf_header* header, void *contents)
                     free(files[j]);
                     files[j] = NULL;
                     
-                    //By overriding the compressed size, our files are forced into only one hook
-                    (*entries)[i].comp_size = file_sizes[j];
-                    (*entries)[i].decomp_size = file_sizes[j];
-                    (*entries)[i].flags |= 0x8000;
+                    if(!existing_revoked)
+                    {
+                        //By overriding the compressed size, our files are forced into only one hook
+                        (*entries)[i].comp_size = file_sizes[j];
+                        (*entries)[i].decomp_size = file_sizes[j];
+                        (*entries)[i].flags |= 0x8000;
+                    }
                 }
             }
         }
@@ -369,6 +472,24 @@ void _main(rf_header* header, void *contents)
     {
         if(files[i] == NULL)
             continue;
+            
+        //Check the file against our revoked list
+        if(revoked_files)
+        {
+            bool new_revoked = false;
+            for(int j = 0; j < revoke_count; j++)
+            {
+                if(!strcmp(files[i], revoked_files[j]))
+                {
+                    new_revoked = true;
+                    break;
+                }
+            }
+            
+            //Don't add the file if it's revoked
+            if(new_revoked)
+                continue;
+        }
         
         printf("Adding file %s", files[i]);
         
@@ -582,6 +703,7 @@ void _main(rf_header* header, void *contents)
     free(files);
     free(extensions);
     free(blocks);
+    free(ifile_handle);
     unmount_path("sd");
     
     return;
