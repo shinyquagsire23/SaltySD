@@ -2,6 +2,8 @@
 
 .open "code.bin","code_saltysd.bin",0x100000
 
+.loadtable "unicode.tbl"
+
 mount_sto equ 0x6A251C
 mount_phtsd equ 0x16BDE8
 alloc equ 0x190D9C
@@ -34,17 +36,17 @@ tryopen_payload:
         
         ldr r0, [sp, #str_allocation]
         ldr r1, =sdmount_wchar
-        mov r2, #(sdmount_wchar_end-sdmount_wchar)
+        mov r2, #(sdmount_wchar_end-sdmount_wchar-2)
         bl memcpy
         
         ldr r0, [sp, #str_allocation]
-        add r0, #(sdmount_wchar_end-sdmount_wchar)
+        add r0, #(sdmount_wchar_end-sdmount_wchar-2)
         mov r1, r7
         ldr r3, [r7, #0x0]
         cmp r3, #0x72
         addeq r1, #0x8
         addne r1, #0xA ; Most other archives have 4 letters, ie data:/ vs rom:/
-        mov r2, #0x400-(sdmount_wchar_end-sdmount_wchar)
+        ldr r2, =0x400-(sdmount_wchar_end-sdmount_wchar-2)
         bl memcpy
         
         
@@ -122,50 +124,9 @@ strconvloop:
 sdmount: .ascii "sd_:"
 .byte 0
 
-; there's probably a way better way to do this...
 sdmount_wchar:
-.ascii "s"
-.byte 0
-.ascii "d"
-.byte 0
-.ascii "_"
-.byte 0
-.ascii ":"
-.byte 0
-.ascii "/"
-.byte 0
-.ascii "s"
-.byte 0
-.ascii "a"
-.byte 0
-.ascii "l"
-.byte 0
-.ascii "t"
-.byte 0
-.ascii "y"
-.byte 0
-.ascii "s"
-.byte 0
-.ascii "d"
-.byte 0
-.ascii "/"
-.byte 0
-.ascii "S"
-.byte 0
-.ascii "u"
-.byte 0
-.ascii "n"
-.byte 0
-.ascii "M"
-.byte 0
-.ascii "o"
-.byte 0
-.ascii "o"
-.byte 0
-.ascii "n"
-.byte 0
+.string "sd_:/saltysd/SunMoon/"
 sdmount_wchar_end:
-.word 0
 
 .pool
 
