@@ -175,7 +175,7 @@ sdmount_wchar_end:
 .pool
 
 ; No Line
-.org 0x41B748
-    nop
+;.org 0x41B748
+;    nop
 
 .Close
