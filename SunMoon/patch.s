@@ -24,8 +24,6 @@ tryopen_payload:
         mov r8, r2
         
         bl check_mount_sd
-        mov r0, r7
-        bl print_wchar_path
         
         ; Here we allocate some space for our path,
         ; and then modify it to point to sd_ so that
@@ -91,35 +89,6 @@ check_mount_sd:
         
 skip_mount:
     pop {r0-r4, pc}    
-
-print_wchar_path:
-    push {r0-r7, lr}
-        sub sp, sp, #0x4
-        mov r7, r0
-        
-        mov r0, #0x200
-        bl alloc
-        str r0, [sp, #0x0]
-        
-        mov r3, r0
-        mov r1, #0x0
-        mov r2, #0x0
-strconvloop:
-        ldrh r0, [r7, r2]
-        strb r0, [r3, r1]
-        add r1, #0x1
-        add r2, #0x2
-        cmp r0, #0x0
-        bne strconvloop
-        
-        ldr r0, [sp, #0x0]
-        mov r1, #0x0
-        swi 0x3D
-        
-        ldr r0, [sp, #str_allocation]
-        bl free
-        add sp, sp, #0x4
-    pop {r0-r7, pc}
     
 sdmount: .ascii "sd_:"
 .byte 0
