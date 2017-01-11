@@ -105,7 +105,7 @@ sdmount_wchar_end:
 .pool
 
 ; No Line
-.org 0x41CFCC
-    nop
+;.org 0x41CFCC
+;    nop
 
 .Close
