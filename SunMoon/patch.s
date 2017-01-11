@@ -26,6 +26,7 @@ tryopen_payload:
         mov r8, r2
         
         bl check_mount_sd
+        mov r0, r7
         
         ; Here we allocate some space for our path,
         ; and then modify it to point to sd_ so that
@@ -42,10 +43,10 @@ tryopen_payload:
         ldr r0, [sp, #str_allocation]
         add r0, #(sdmount_wchar_end-sdmount_wchar-2)
         mov r1, r7
-        ldr r3, [r7, #0x6]
+        ldrh r3, [r7, #0x6]
         cmp r3, #0x3A
-        addeq r1, #0x8
-        addne r1, #0xA ; Most other archives have 4 letters, ie data:/ vs rom:/
+        addeq r1, #0xA
+        addne r1, #0xC ; Most other archives have 4 letters, ie data:/ vs rom:/
         ldr r2, =0x400-(sdmount_wchar_end-sdmount_wchar-2)
         bl memcpy
         
