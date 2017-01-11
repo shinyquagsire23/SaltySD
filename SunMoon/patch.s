@@ -25,6 +25,10 @@ tryopen_payload:
         mov r7, r1 ;input file path
         mov r8, r2
         
+        ldrh r3, [r7, #0x0]
+        cmp r3, #0x64 ; Explicitly filter data:/
+        beq abort
+        
         bl check_mount_sd
         mov r0, r7
         
@@ -64,7 +68,8 @@ tryopen_payload:
         ; and can return
         cmp r4, #0x0
         beq success
-        
+
+abort:        
         add sp, sp, #0x20
     pop {r0-r12, lr}
 exit:
