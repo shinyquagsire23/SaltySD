@@ -4,11 +4,13 @@
 
 .loadtable "unicode.tbl"
 
-mount_sto equ 0x6A251C
-mount_phtsd equ 0x16BDE8
-alloc equ 0x190D9C
-free equ 0x190D74
-memcpy equ 0x2FEC20
+mount_sto equ 0x6A455C
+mount_phtsd equ 0x16BF0C
+alloc equ 0x190EBC
+free equ 0x190E94
+memcpy equ 0x2FEBD8
+arclut equ 0x63E994
+TryOpenFile equ 0x169034
 
 ; stack vars
 str_allocation equ 0x0
@@ -47,13 +49,11 @@ tryopen_payload:
         ldr r2, =0x400-(sdmount_wchar_end-sdmount_wchar-2)
         bl memcpy
         
-        
-        
         mov r0, r6
         ldr r1, [sp, #str_allocation]
         mov r2, r8
         mov r4, #0xBA ;magic check
-        bl 0x168F10
+        bl TryOpenFile
         mov r4, r0
         
         ldr r0, [sp, #str_allocation]
@@ -67,12 +67,12 @@ tryopen_payload:
         add sp, sp, #0x20
     pop {r0-r12, lr}
 exit:
-    b 0x168F18
+    b TryOpenFile+8
     
 success:
     add sp, sp, #0x20
     pop {r0-r12, lr}
-    b 0x168F9C
+    b TryOpenFile+0x8C
     
 check_mount_sd:
     push {r0-r4, lr}
@@ -100,12 +100,12 @@ sdmount_wchar_end:
 .pool
 
 ; nn::fs::TryOpenFile
-.org 0x168F14
+.org TryOpenFile+4
     b tryopen_payload
 .pool
 
 ; No Line
-;.org 0x41B748
-;    nop
+.org 0x41CFCC
+    nop
 
 .Close
