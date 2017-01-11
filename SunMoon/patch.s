@@ -42,8 +42,8 @@ tryopen_payload:
         ldr r0, [sp, #str_allocation]
         add r0, #(sdmount_wchar_end-sdmount_wchar-2)
         mov r1, r7
-        ldr r3, [r7, #0x0]
-        cmp r3, #0x72
+        ldr r3, [r7, #0x6]
+        cmp r3, #0x3A
         addeq r1, #0x8
         addne r1, #0xA ; Most other archives have 4 letters, ie data:/ vs rom:/
         ldr r2, =0x400-(sdmount_wchar_end-sdmount_wchar-2)
