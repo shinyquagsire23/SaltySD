@@ -54,6 +54,7 @@ except TypeError:
     f = open(sys.argv[1], 'rb').read()
     
 common = open('common.asm','w')
+common_armips = open('common.armips.asm','w')
 
 # Print to stderr a helpful message in case someone tries to patch the Demo.
 # This will also stop the Makefile
@@ -99,6 +100,45 @@ else:
     print(".equ something_resource_lock, \t" + hex(r32(f,f.find(path_str_sig)-4)) + "\n", file=common)
 
 print("common.asm generated successfully!")
+
+print("mount_sdmc equ (" + hex(f.find(mount_sdmc_sig)+0x100000) + ")", file=common_armips)
+print("unmount_path equ (" + hex(f.find(unmount_path_sig)+0x100000) + ")", file=common_armips)
+print("IFile_Init equ (" + hex(f.find(IFile_Init_sig)+0x100000) + ")", file=common_armips)
+print("IFile_Open equ (" + hex(f.find(IFile_Open_sig)+0x100000) + ")", file=common_armips)
+print("IFile_GetSize equ (" + hex(f.find(IFile_GetSize_sig)+0x100000) + ")", file=common_armips)
+print("IFile_Read equ (" + hex(f.find(IFile_Read_sig)+0x100000) + ")", file=common_armips)
+print("IFile_Close equ (" + hex(f.find(IFile_Close_sig)+0x100000) + ")", file=common_armips)
+print("OpenDirectory equ (" + hex(f.find(OpenDirectory_sig)+0x100000) + ")", file=common_armips)
+print("ReadDirectory equ (" + hex(f.find(ReadDirectory_sig)+0x100000) + ")", file=common_armips)
+print("CloseDirectory equ (" + hex(f.find(CloseDirectory_sig)+0x100000) + ")", file=common_armips)
+print("strcat equ (" + hex(f.find(strcat_sig)+0x100000) + ")", file=common_armips)
+print("strcpy equ (" + hex(f.find(strcpy_sig)+0x100000) + ")", file=common_armips)
+print("strlen equ (" + hex(f.find(strlen_sig)+0x100000) + ")", file=common_armips)
+print("resalloc equ (" + hex(f.find(resalloc_sig_legacy if f.find(resalloc_sig) == -1 else resalloc_sig)+0x100000) + ")", file=common_armips)  
+print("path_str equ (" + hex(f.find(path_str_sig)+0x100000) + ")", file=common_armips)
+print("res_deallocate equ (" + hex(f.find(res_deallocate_sig)+0x100000+0x4), file=common_armips)
+print("idk equ (" + hex(f.find(idk_sig_legacy if f.find(idk_sig) == -1 else idk_sig)+0x100000) + ")", file=common_armips) 
+print("referenced_by_ls_init equ (" + hex(f.find(referenced_by_ls_init_sig)+0x100000) + ")", file=common_armips)
+print("read_dtls equ (" + hex(f.find(read_dtls_sig_legacy if f.find(read_dtls_sig) == -1 else read_dtls_sig)+0x100000-0x4), file=common_armips)
+print("liballoc equ (" + hex(f.find(liballoc_sig)+0x100000) + ")", file=common_armips)
+print("libdealloc equ (" + hex(f.find(libdealloc_sig)+0x100000) + ")", file=common_armips)
+print("memcpy equ (" + hex(f.find(memcpy_sig)+0x100000) + ")", file=common_armips)
+print("memmove equ (" + hex(f.find(memmove_sig)+0x100000-0xC), file=common_armips)
+print("memclr equ (" + hex(f.find(memclr_sig)+0x100000) + ")", file=common_armips)
+print("strcmp equ (" + hex(f.find(strcmp_sig)+0x100000) + ")", file=common_armips)
+print("crit_this equ (" + hex(f.find(crit_this_sig)+0x100000) + ")", file=common_armips)
+print("crit_init equ (" + hex(f.find(crit_init_sig)+0x100000-0xC), file=common_armips)
+print("crit_enter equ (" + hex(f.find(crit_enter_sig)+0x100000) + ")", file=common_armips)
+print("crit_leave equ (" + hex(f.find(crit_leave_sig)+0x100000) + ")", file=common_armips)
+print("crc equ (" + hex(f.find(crc_sig)+0x100000) + ")", file=common_armips)
+print("vsnprintf equ (" + hex(f.find(vsnprintf_sig)+0x100000+1), file=common_armips)
+print("get_rf_struct equ (" + hex(f.find(get_rf_struct_sig)+0x100000) + ")", file=common_armips)
+if(r32(f,f.find(path_str_sig)-4) == 0x0):
+    print("something_resource_lock equ (" + hex(r32(f,f.find(path_str_sig)-8)) + ")\n", file=common_armips)
+else:
+    print("something_resource_lock equ (" + hex(r32(f,f.find(path_str_sig)-4)) + ")\n", file=common_armips)
+
+print("common.armips.asm generated successfully!")
 
 common = open('common.h','w')
 print("#define mount_sdmc_ADDR " + hex(f.find(mount_sdmc_sig)+0x100000), file=common)
