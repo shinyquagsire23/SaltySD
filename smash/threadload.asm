@@ -8,6 +8,11 @@
 .include "common.asm"
 .equ base_addr,     0xA36000
 
+.equ TO_LOAD, 0x0
+.equ RESOURCE_ID, 0x4
+.equ FILE_SIZE, 0x8
+.equ BYTES_READ, 0xC
+
 test:
      @Compensate for removing code
      sub sp, sp, #0x8
@@ -21,16 +26,11 @@ test:
         tst r0, #0x8000 @ does this file have an SD override?
      pop {r0-r6,lr}
      bne exit
-
-     @ Stash to-load address
-     push {r0-r6,lr}
-        ldr r4, storage
-        str r1, [r4, #0x18]
-     pop {r0-r6,lr}
      
      push {r0-r8,lr}
-         ldr r0, storage
-         str r2, [r0, #0x28] @r2 is a pointer to our resource u16
+         sub sp, sp, #0x20
+         str r1, [sp, #TO_LOAD] @ Stash to-load address
+         str r2, [sp, #RESOURCE_ID]
          
          ldr r0, =0x404
          call liballoc
@@ -41,8 +41,7 @@ test:
          call strlen
          add r7, r7, r0
          
-         ldr r0, storage
-         ldr r1, [r0, #0x28]
+         ldr r1, [sp, #RESOURCE_ID]
          mov r0, r7
          sub r0, r0, #0x4
          call path_str
@@ -71,13 +70,11 @@ test:
          
          mov r0, r8
          call IFile_GetSize
-         ldr r3, storage
-         str r0, [r3, #0x10]
+         str r0, [sp, #FILE_SIZE]
          
-         ldr r0, storage
-         ldr r1, [r0, #0x18] @dst
-         ldr r2, [r0, #0x10] @size
-         add r3, r0, #0x14 @bytes_read
+         ldr r1, [sp, #TO_LOAD] @dst
+         ldr r2, [sp, #FILE_SIZE] @size
+         add r3, sp, #BYTES_READ @bytes_read
          mov r0, r8 @file
          call IFile_Read
 end_read_sd:         
@@ -85,6 +82,7 @@ end_read_sd:
          call IFile_Close 
          mov r0, r8
          call libdealloc
+         add sp, sp, #0x20
      pop  {r0-r8,lr}
      
      b skip
@@ -95,6 +93,7 @@ close_and_end:
 close:
      mov r0, r8
      call libdealloc
+     add sp, sp, #0x20
      pop  {r0-r8,lr}
      
 exit:
@@ -109,8 +108,6 @@ skip_end:
     bx lr
     
 .pool
-
-storage: .long 0xC7CD00
 
 .align 4
 sdmc:       .asciz "sdmc:"
