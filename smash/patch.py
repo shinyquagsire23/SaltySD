@@ -60,7 +60,7 @@ rf_payload_addr = 0xA33000-0x100000
 ls_payload_addr = 0xA36000-0x100000
 thread_payload_addr = 0xA36000-0x100000
 norm_payload_addr = 0xA36800-0x100000
-sdsound_addr = 0xA3D800-0x100000
+sdsound_addr = 0xA36B00-0x100000
 
 # Just convert f to bytes now that we're done searching things.
 try:
