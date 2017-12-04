@@ -37,3 +37,4 @@ all:
 	@$(OBJCOPY) -O binary a.out "bin/sdsound.bin"
 	@rm a.out
 	@python patch.py code.bin
+	@armips cro_redir.asm

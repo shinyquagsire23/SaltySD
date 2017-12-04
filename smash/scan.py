@@ -47,6 +47,9 @@ resalloc_sig_legacy = b2str([0xF0, 0x4F, 0x2D, 0xE9, 0x34, 0xD0, 0x4D, 0xE2, 0x0
 idk_sig_legacy = b2str([0x04, 0x10, 0x91, 0xE5, 0x00, 0x00, 0x51, 0xE3, 0x0B, 0x10, 0xD1, 0x15, 0x00, 0x00, 0x51, 0x13])
 read_dtls_sig_legacy = b2str([0xF0, 0x41, 0x2D, 0xE9, 0x01, 0x40, 0xA0, 0xE1, 0x00, 0x70, 0xA0, 0xE1, 0x08, 0x50, 0x90, 0xE5])
 
+cro_load_sig = b2str([0xF0, 0x41, 0x2D, 0xE9, 0x00, 0x50, 0x90, 0xE5, 0x18, 0x00, 0x85, 0xE2])
+cro_file_size_sig = b2str([0x00, 0xF0, 0x20, 0xE3, 0xF1, 0xFF, 0xFF, 0x0A, 0x08, 0x00, 0x90, 0xE5])
+
 # Make this compatible with Python 2 and 3
 try:
     f = open(sys.argv[1], 'r', encoding='latin-1', newline="").read()
@@ -137,6 +140,13 @@ if(r32(f,f.find(path_str_sig)-4) == 0x0):
     print("something_resource_lock equ (" + hex(r32(f,f.find(path_str_sig)-8)) + ")\n", file=common_armips)
 else:
     print("something_resource_lock equ (" + hex(r32(f,f.find(path_str_sig)-4)) + ")\n", file=common_armips)
+
+print("cro_load_hook_loc_2 equ (" + hex(f.find(cro_load_sig)+4+0x100000) + ")", file=common_armips)
+print("cro_msg_hook_loc_2 equ (" + hex(f.find(cro_load_sig)+4+0x78+0x100000) + ")", file=common_armips)
+print("cro_load_hook_loc equ (" + hex(f.index(cro_load_sig, f.find(cro_load_sig)+len(cro_load_sig))+4+0x100000) + ")", file=common_armips)
+print("cro_msg_hook_loc equ (" + hex(f.index(cro_load_sig, f.find(cro_load_sig)+len(cro_load_sig))+4+0x78+0x100000) + ")", file=common_armips)
+print("cro_file_size_hook_loc equ (" + hex(f.find(cro_file_size_sig)+0x100000) + ")", file=common_armips)
+print("cro_file_hook_loc equ (" + hex(f.find(cro_file_size_sig)+0xA8+0x100000) + ")", file=common_armips)
 
 print("common.armips.asm generated successfully!")
 
