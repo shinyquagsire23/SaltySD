@@ -49,6 +49,7 @@ read_dtls_sig_legacy = b2str([0xF0, 0x41, 0x2D, 0xE9, 0x01, 0x40, 0xA0, 0xE1, 0x
 
 cro_load_sig = b2str([0xF0, 0x41, 0x2D, 0xE9, 0x00, 0x50, 0x90, 0xE5, 0x18, 0x00, 0x85, 0xE2])
 cro_file_size_sig = b2str([0x00, 0xF0, 0x20, 0xE3, 0xF1, 0xFF, 0xFF, 0x0A, 0x08, 0x00, 0x90, 0xE5])
+cro_load_object_sig = b2str([0x7C, 0x40, 0x9F, 0xE5, 0x00, 0x00, 0x94, 0xE5, 0x00, 0x00, 0x50, 0xE3, 0x05, 0x00, 0x00, 0x1A])
 
 # Make this compatible with Python 2 and 3
 try:
@@ -143,10 +144,14 @@ else:
 
 print("cro_load_hook_loc_2 equ (" + hex(f.find(cro_load_sig)+4+0x100000) + ")", file=common_armips)
 print("cro_msg_hook_loc_2 equ (" + hex(f.find(cro_load_sig)+4+0x78+0x100000) + ")", file=common_armips)
+print("cro_post_hook_loc_2 equ (" + hex(f.find(cro_load_sig)+4+0xD0+0x100000) + ")", file=common_armips)
 print("cro_load_hook_loc equ (" + hex(f.index(cro_load_sig, f.find(cro_load_sig)+len(cro_load_sig))+4+0x100000) + ")", file=common_armips)
 print("cro_msg_hook_loc equ (" + hex(f.index(cro_load_sig, f.find(cro_load_sig)+len(cro_load_sig))+4+0x78+0x100000) + ")", file=common_armips)
+print("cro_post_hook_loc equ (" + hex(f.index(cro_load_sig, f.find(cro_load_sig)+len(cro_load_sig))+4+0xFC+0x100000) + ")", file=common_armips)
 print("cro_file_size_hook_loc equ (" + hex(f.find(cro_file_size_sig)+0x100000) + ")", file=common_armips)
 print("cro_file_hook_loc equ (" + hex(f.find(cro_file_size_sig)+0xA8+0x100000) + ")", file=common_armips)
+print("cro_load_object_adj_loc equ (" + hex(f.find(cro_load_object_sig)+0x10+0x100000) + ")", file=common_armips)
+print("cro_load_object equ (" + hex(r32(f, f.find(cro_load_object_sig)+0x84)) + ")", file=common_armips)
 
 print("common.armips.asm generated successfully!")
 

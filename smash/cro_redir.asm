@@ -4,6 +4,10 @@
 
 .include "common.armips.asm"
 
+; Expand the CRO load object to 8 from 4
+.org cro_load_object_adj_loc
+    mov r0, #0x8
+
 .org cro_load_hook_loc
    bl cro_extend
 
