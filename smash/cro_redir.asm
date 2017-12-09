@@ -336,6 +336,157 @@ proj_size_format: .ascii "_Z%uGetSize%s_%sv",0
 
 .pool
 
+FIGHTER_DATA_SHIFT equ (0x20)
+FIGHTER_DATA_OUT equ (FIGHTER_DATA_SHIFT-0x0)
+FIGHTER_DATA_ID equ (FIGHTER_DATA_SHIFT-0x4)
+FIGHTER_DATA_UNK equ (FIGHTER_DATA_SHIFT-0x8)
+FIGHTER_DATA_STR equ (FIGHTER_DATA_SHIFT-0xC)
+FIGHTER_DATA_CRO equ (FIGHTER_DATA_SHIFT-0x10)
+FIGHTER_DATA_FUNC equ (FIGHTER_DATA_SHIFT-0x14)
+
+; Load get_fighter_data_* exports from CROs at runtime
+.org get_fighter_data
+   push {r1-r8, lr}
+      sub sp, sp, #FIGHTER_DATA_SHIFT
+      str r0, [sp, #FIGHTER_DATA_OUT]
+      str r1, [sp, #FIGHTER_DATA_ID]
+      str r2, [sp, #FIGHTER_DATA_UNK]
+   
+      ldr r0, =cro_load_object
+      ldr r0, [r0]
+      ldr r0, [r0]
+      ldr r0, [r0, #LOAD_OBJECT_LIST]
+      str r0, [sp, #FIGHTER_DATA_CRO]
+
+      ldr r0, [sp, #FIGHTER_DATA_ID]
+      bl cro_get_fighter_data_str
+      str r0, [sp, #FIGHTER_DATA_STR]
+      
+      add r0, r0, #0x4
+      ldr r1, [sp, #FIGHTER_DATA_CRO]
+      bl cro_list_find_func
+      str r0, [sp, #FIGHTER_DATA_FUNC]
+      ldr r0, [sp, #FIGHTER_DATA_STR]
+      bl libdealloc
+      
+      ldr r0, [sp, #FIGHTER_DATA_OUT]
+      ldr r1, [sp, #FIGHTER_DATA_ID]
+      ldr r2, [sp, #FIGHTER_DATA_UNK]
+      ldr r3, [sp, #FIGHTER_DATA_FUNC]
+      
+      cmp r3, #0x0
+      beq fighter_data_failed
+      blx r3
+      
+      add sp, sp, #FIGHTER_DATA_SHIFT
+   pop {r1-r8, pc}
+   
+fighter_data_failed:
+      ldr r0, =0x1234567
+      str r0, [r0]
+      b fighter_data_failed
+
+cro_get_fighter_data_str:
+   push {r1-r7, lr}
+      mov r5, r0 ; ID
+
+      ldr r0, =0x100
+      bl liballoc
+      mov r7, r0
+   
+      mov r0, r5
+      bl character_id_to_lowercase ; get char name
+      mov r6, r0
+      bl strlen
+      add r0, r0, #17
+      
+      mov r3, r6
+      mov r2, r0
+      ldr r1, =chr_fighter_data_format
+      mov r0, r7
+      bl sprintf
+
+      mov r0, r7
+   pop {r1-r7, pc}
+
+.align 4
+chr_fighter_data_format: .ascii "_ZN3app%uget_fighter_data_%sEv",0
+
+.pool
+
+FIGHTER_SPECIALIZER_SHIFT equ (0x20)
+FIGHTER_SPECIALIZER_OUT equ (FIGHTER_SPECIALIZER_SHIFT-0x0)
+FIGHTER_SPECIALIZER_ID equ (FIGHTER_SPECIALIZER_SHIFT-0x4)
+FIGHTER_SPECIALIZER_UNK equ (FIGHTER_SPECIALIZER_SHIFT-0x8)
+FIGHTER_SPECIALIZER_STR equ (FIGHTER_SPECIALIZER_SHIFT-0xC)
+FIGHTER_SPECIALIZER_CRO equ (FIGHTER_SPECIALIZER_SHIFT-0x10)
+FIGHTER_SPECIALIZER_FUNC equ (FIGHTER_SPECIALIZER_SHIFT-0x14)
+
+; Load get_fighter_specializer_* exports from CROs at runtime
+.org get_fighter_specializer
+   push {r1-r8, lr}
+      sub sp, sp, #FIGHTER_SPECIALIZER_SHIFT
+      str r0, [sp, #FIGHTER_SPECIALIZER_OUT]
+      str r1, [sp, #FIGHTER_SPECIALIZER_ID]
+      str r2, [sp, #FIGHTER_SPECIALIZER_UNK]
+   
+      ldr r0, =cro_load_object
+      ldr r0, [r0]
+      ldr r0, [r0]
+      ldr r0, [r0, #LOAD_OBJECT_LIST]
+      str r0, [sp, #FIGHTER_SPECIALIZER_CRO]
+
+      ldr r0, [sp, #FIGHTER_SPECIALIZER_ID]
+      bl cro_get_fighter_specializer_str
+      str r0, [sp, #FIGHTER_SPECIALIZER_STR]
+      
+      add r0, r0, #0x4
+      ldr r1, [sp, #FIGHTER_SPECIALIZER_CRO]
+      bl cro_list_find_func
+      str r0, [sp, #FIGHTER_SPECIALIZER_FUNC]
+      ldr r0, [sp, #FIGHTER_SPECIALIZER_STR]
+      bl libdealloc
+      
+      ldr r0, [sp, #FIGHTER_SPECIALIZER_OUT]
+      ldr r1, [sp, #FIGHTER_SPECIALIZER_ID]
+      ldr r2, [sp, #FIGHTER_SPECIALIZER_UNK]
+      ldr r3, [sp, #FIGHTER_SPECIALIZER_FUNC]
+      
+      cmp r3, #0x0
+      moveq r0, #0x0
+      blxne r3
+      
+      add sp, sp, #FIGHTER_SPECIALIZER_SHIFT
+   pop {r1-r8, pc}
+
+cro_get_fighter_specializer_str:
+   push {r1-r7, lr}
+      mov r5, r0 ; ID
+
+      ldr r0, =0x100
+      bl liballoc
+      mov r7, r0
+   
+      mov r0, r5
+      bl character_id_to_lowercase ; get char name
+      mov r6, r0
+      bl strlen
+      add r0, r0, #24
+      
+      mov r3, r6
+      mov r2, r0
+      ldr r1, =chr_fighter_specializer_format
+      mov r0, r7
+      bl sprintf
+
+      mov r0, r7
+   pop {r1-r7, pc}
+
+.align 4
+chr_fighter_specializer_format: .ascii "_ZN3app%uget_fighter_specializer_%sEv",0
+
+.pool
+
 .org 0xA36C00
 
 ; Keep a pointer to our string in r8 for later
