@@ -4,6 +4,15 @@
 
 .include "common.armips.asm"
 
+LOAD_OBJECT_LIST equ (0x8)
+BUFFER_LOAD_ADDR equ (0x0)
+BUFFER_PPREV equ (0x18)
+BUFFER_PNEXT equ (0x1C)
+BUFFER_CRO_NAME equ (0x20)
+CRO_CODE_START equ (0xB0)
+CRO_NAMED_EXPORT_PTR equ (0xD0)
+CRO_NAMED_EXPORT_NUM equ (0xD4)
+
 ; Expand the CRO load object to 8 from 4
 .org cro_load_object_adj_loc
     mov r0, #0x8
@@ -21,6 +30,7 @@ mov r0, #0x60
    bl cro_msg_extend
 cro_msg_return:
 
+
 .org cro_load_hook_loc_2
    bl cro_extend
 
@@ -33,6 +43,7 @@ mov r0, #0x60
 .org cro_msg_hook_loc_2+0xC
    bl cro_msg_extend
 cro_msg_return_2:
+
 
 .org cro_file_size_hook_loc-0xC
 cro_file_size_hook:
@@ -48,6 +59,282 @@ cro_file_hook:
 cro_file_return:
 .org cro_file_hook_loc
 cro_sarc_skip:
+
+; Patch CRO object new function
+.org cro_fighter_new
+   push {r2-r8, lr}
+      mov r4, r0
+      ldrb r0, [r4, #0x2B0] ; get type
+      cmp r0, #0x1
+      bgt failed
+   
+      ldr r0, =cro_load_object
+      ldr r0, [r0]
+      ldr r0, [r0]
+      ldr r5, [r0, #LOAD_OBJECT_LIST]
+
+      ldr r0, [r4, #0x2B4] ; get ID
+      ldrb r1, [r4, #0x2B0] ; get type
+      bl cro_get_size_str
+      mov r6, r0
+      
+      add r0, r0, #0x4
+      mov r1, r5
+      bl cro_list_find_func
+      push {r0-r3}
+         mov r0, r6
+         bl libdealloc
+      pop {r0-r3}
+      cmp r0, #0x0
+      beq failed
+      blx r0
+      
+      bl liballoc
+      mov r8, r0
+
+      ldr r0, [r4, #0x2B4] ; get ID
+      ldrb r1, [r4, #0x2B0] ; get type
+      bl cro_get_new_str
+      mov r6, r0
+      
+      add r0, r0, #0x4
+      mov r1, r5
+      bl cro_list_find_func
+      push {r0-r3}
+         mov r0, r6
+         bl libdealloc
+      pop {r0-r3}
+      cmp r0, #0x0
+      beq failed
+      
+      mov r1, r0
+      mov r0, r8
+      blx r1
+
+failed:
+      mov r1, r0
+      add r0, r4, #0x4
+   pop {r2-r8, lr}
+
+   cmp r1, #0x0
+   moveq r0, #0x0
+   bxeq lr
+
+   push {r4-r6, lr}
+      mov r4, r0
+      ldr r0, [r0, #0x8]
+      mov r5, r1
+      cmp r0, #0x0
+      beq new_is_good
+      
+      bl cro_unk_1
+      ldr r0, [r4, #0x8]
+      bl libdealloc
+new_is_good:
+      mov r0, #0x1
+      str r5, [r4, #0x8]
+  pop {r4-r6, pc}
+
+; r0=string, r1=CRO
+cro_find_func:
+   push {r1-r7, lr}
+      push {r0-r1}
+      mov r1, #0xFF
+      swi 0x3D
+      pop {r0-r1}
+      mov r5, r0
+      mov r4, r1
+      
+      ldr r6, [r4, #CRO_NAMED_EXPORT_PTR]
+      ldr r7, [r4, #CRO_NAMED_EXPORT_NUM]
+
+symbol_loop:
+      ldr r0, [r6, #0x0]
+      mov r1, r5
+      bl strcmp
+      cmp r0, #0x0
+      ldreq r0, [r6, #0x4]
+      lsreq r0, r0, #0x4
+      ldreq r1, [r4, #CRO_CODE_START]
+      addeq r0, r0, r1
+      beq symbol_success
+      
+      add r6, r6, #0x8
+      sub r7, r7, #0x1
+      cmp r7, #0x0
+      bne symbol_loop
+      
+      mov r0, #0x0
+symbol_success:
+   pop {r1-r7, pc}
+
+; r0=string, r1=message_buffer
+cro_list_find_func:
+   push {r1-r7, lr}
+      mov r5, r1
+      mov r6, r0
+
+cro_search_loop:
+      push {r0-r1}
+         add r0, r5, #BUFFER_CRO_NAME
+         mov r1, #0xFF
+         swi 0x3D
+      pop {r0-r1}
+
+      ldr r1, [r5, #BUFFER_LOAD_ADDR]
+      mov r0, r6
+      bl cro_find_func
+      cmp r0, #0x0
+      bne cro_found
+      
+      ldr r5, [r5, #BUFFER_PNEXT]
+      cmp r5, #0x0
+      bne cro_search_loop
+
+cro_found:
+   pop {r1-r7, pc}
+
+cro_get_new_str:
+   cmp r1, #0x0
+   beq get_chr_new
+   cmp r1, #0x1
+   beq get_proj_new
+   bx lr
+
+get_proj_new:
+   push {r1-r7, lr}
+      sub sp, sp, #0x4
+      mov r5, r0 ; ID
+
+      ldr r0, =0x100
+      bl liballoc
+      mov r7, r0
+   
+      ldr r0, =projectile_table_ptr
+      ldr r0, [r0]
+      ldr r0, [r0, r5, lsl #2]
+      mov r4, r0 ; projectile
+      bl strlen
+      mov r6, r0
+      
+      ldr r0, =projectile_prefix_table_ptr
+      ldr r0, [r0]
+      ldr r0, [r0, r5, lsl #2]
+      mov r5, r0 ; character
+      bl strlen
+      add r0, r0, #0x4
+      add r0, r0, r6
+      
+      str r4, [sp]
+      mov r3, r5
+      mov r2, r0
+      ldr r1, =proj_new_format
+      mov r0, r7
+      bl sprintf
+
+      mov r0, r7
+      add sp, sp, #0x4
+   pop {r1-r7, pc}
+
+get_chr_new:
+   push {r1-r7, lr}
+      mov r5, r0 ; character ID
+
+      ldr r0, =0x100
+      bl liballoc
+      mov r7, r0
+   
+      mov r0, r5
+      bl character_id_to_lowercase
+      mov r6, r0
+      bl strlen
+      add r0, r0, #0x3
+      
+      mov r3, r6
+      mov r2, r0
+      ldr r1, =chr_new_format
+      mov r0, r7
+      bl sprintf
+
+      mov r0, r7
+   pop {r1-r7, pc}
+
+cro_get_size_str:
+   cmp r1, #0x0
+   beq get_chr_size
+   cmp r1, #0x1
+   beq get_proj_size
+   bx lr
+
+get_proj_size:
+   push {r1-r7, lr}
+      sub sp, sp, #0x4
+      mov r5, r0 ; ID
+
+      ldr r0, =0x100
+      bl liballoc
+      mov r7, r0
+   
+      ldr r0, =projectile_table_ptr
+      ldr r0, [r0]
+      ldr r0, [r0, r5, lsl #2]
+      mov r4, r0 ; projectile
+      bl strlen
+      mov r6, r0
+      
+      ldr r0, =projectile_prefix_table_ptr
+      ldr r0, [r0]
+      ldr r0, [r0, r5, lsl #2]
+      mov r5, r0 ; character
+      bl strlen
+      add r0, r0, #0x8
+      add r0, r0, r6
+      
+      str r4, [sp]
+      mov r3, r5
+      mov r2, r0
+      ldr r1, =proj_size_format
+      mov r0, r7
+      bl sprintf
+
+      mov r0, r7
+      add sp, sp, #0x4
+   pop {r1-r7, pc}
+
+get_chr_size:
+   push {r1-r7, lr}
+      mov r5, r0 ; ID
+
+      ldr r0, =0x100
+      bl liballoc
+      mov r7, r0
+   
+      mov r0, r5
+      bl character_id_to_lowercase ; get char name
+      mov r6, r0
+      bl strlen
+      add r0, r0, #0x7
+      
+      mov r3, r6
+      mov r2, r0
+      ldr r1, =chr_size_format
+      mov r0, r7
+      bl sprintf
+
+      mov r0, r7
+   pop {r1-r7, pc}
+
+.align 4
+chr_new_format: .ascii "_Z%uNew%sPv",0
+.align 4
+chr_size_format: .ascii "_Z%uGetSize%sv",0
+
+.align 4
+proj_new_format: .ascii "_Z%uNew%s_%sPv",0
+.align 4
+proj_size_format: .ascii "_Z%uGetSize%s_%sv",0
+
+.pool
 
 .org 0xA36C00
 
@@ -79,7 +366,7 @@ cro_msg_extend:
    
    ; Debug print
    push {r0-r1}
-      add r0, r4, #0x20
+      add r0, r4, #BUFFER_CRO_NAME
       mov r1, #0xff
       swi 0x3D
    pop {r0-r1}
@@ -88,7 +375,7 @@ cro_msg_extend:
    str r8, [r4]
    
    bx lr
-   
+
 STACK_SHIFT equ (0x40)   
 
 FILE_HANDLE equ (STACK_SHIFT-0x0)
@@ -253,6 +540,7 @@ mod_path_end: .byte 0
 meme: .ascii "file exists",0
 .align 4
 meme2: .ascii "file override",0
+
 .pool
 
 .Close
