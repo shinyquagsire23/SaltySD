@@ -487,6 +487,191 @@ chr_fighter_specializer_format: .ascii "_ZN3app%uget_fighter_specializer_%sEv",0
 
 .pool
 
+
+
+
+WEAPON_DATA_SHIFT equ (0x20)
+WEAPON_DATA_THIS equ (WEAPON_DATA_SHIFT-0x0)
+WEAPON_DATA_ID equ (WEAPON_DATA_SHIFT-0x4)
+WEAPON_DATA_STR equ (WEAPON_DATA_SHIFT-0x8)
+WEAPON_DATA_CRO equ (WEAPON_DATA_SHIFT-0xC)
+WEAPON_DATA_FUNC equ (WEAPON_DATA_SHIFT-0x10)
+
+; Load get_weapon_data_* exports from CROs at runtime
+.org get_weapon_data
+   push {r1-r8, lr}
+      sub sp, sp, #WEAPON_DATA_SHIFT
+      str r0, [sp, #WEAPON_DATA_THIS]
+      str r1, [sp, #WEAPON_DATA_ID]
+   
+      ldr r0, =cro_load_object
+      ldr r0, [r0]
+      ldr r0, [r0]
+      ldr r0, [r0, #LOAD_OBJECT_LIST]
+      str r0, [sp, #WEAPON_DATA_CRO]
+
+      ldr r0, [sp, #WEAPON_DATA_ID]
+      bl cro_get_weapon_data_str
+      str r0, [sp, #WEAPON_DATA_STR]
+      
+      add r0, r0, #0x4
+      ldr r1, [sp, #WEAPON_DATA_CRO]
+      bl cro_list_find_func
+      str r0, [sp, #WEAPON_DATA_FUNC]
+      ldr r0, [sp, #WEAPON_DATA_STR]
+      bl libdealloc
+      
+      ldr r0, [sp, #WEAPON_DATA_THIS]
+      ldr r1, [sp, #WEAPON_DATA_ID]
+      ldr r3, [sp, #WEAPON_DATA_FUNC]
+      
+      cmp r3, #0x0
+      ldreq r0, =weapon_data_default
+      blx r3
+      
+      add sp, sp, #WEAPON_DATA_SHIFT
+   pop {r1-r8, pc}
+
+cro_get_weapon_data_str:
+   push {r1-r7, lr}
+      sub sp, sp, #0x4
+      mov r5, r0 ; ID
+
+      ldr r0, =0x100
+      bl liballoc
+      mov r7, r0
+   
+      ldr r0, =projectile_table_ptr
+      ldr r0, [r0]
+      ldr r0, [r0, r5, lsl #2]
+      mov r4, r0 ; projectile
+      bl strlen
+      mov r6, r0
+      
+      ldr r0, =projectile_prefix_table_ptr
+      ldr r0, [r0]
+      ldr r0, [r0, r5, lsl #2]
+      mov r5, r0 ; character
+      bl strlen
+      add r0, r0, #17
+      add r0, r0, r6
+      
+      str r4, [sp]
+      mov r3, r5
+      mov r2, r0
+      ldr r1, =chr_weapon_data_format
+      mov r0, r7
+      bl sprintf
+
+      mov r0, r7
+      add sp, sp, #0x4
+   pop {r1-r7, pc}
+
+.align 4
+chr_weapon_data_format: .ascii "_ZN3app%uget_weapon_data_%s_%sEv",0
+
+.pool
+
+WEAPON_SPECIALIZER_SHIFT equ (0x20)
+WEAPON_SPECIALIZER_THIS equ (WEAPON_SPECIALIZER_SHIFT-0x0)
+WEAPON_SPECIALIZER_ID equ (WEAPON_SPECIALIZER_SHIFT-0x4)
+WEAPON_SPECIALIZER_STR equ (WEAPON_SPECIALIZER_SHIFT-0x8)
+WEAPON_SPECIALIZER_CRO equ (WEAPON_SPECIALIZER_SHIFT-0xC)
+WEAPON_SPECIALIZER_FUNC equ (WEAPON_SPECIALIZER_SHIFT-0x10)
+
+; Load get_weapon_specializer_* exports from CROs at runtime
+.org get_weapon_specializer
+   push {r1-r8, lr}
+      sub sp, sp, #WEAPON_SPECIALIZER_SHIFT
+      str r0, [sp, #WEAPON_SPECIALIZER_THIS]
+      str r1, [sp, #WEAPON_SPECIALIZER_ID]
+   
+      ldr r0, =cro_load_object
+      ldr r0, [r0]
+      ldr r0, [r0]
+      ldr r0, [r0, #LOAD_OBJECT_LIST]
+      str r0, [sp, #WEAPON_SPECIALIZER_CRO]
+
+      ldr r0, [sp, #WEAPON_SPECIALIZER_ID]
+      bl cro_get_weapon_specializer_str
+      str r0, [sp, #WEAPON_SPECIALIZER_STR]
+      
+      add r0, r0, #0x4
+      ldr r1, [sp, #WEAPON_SPECIALIZER_CRO]
+      bl cro_list_find_func
+      str r0, [sp, #WEAPON_SPECIALIZER_FUNC]
+      ldr r0, [sp, #WEAPON_SPECIALIZER_STR]
+      bl libdealloc
+      
+      ldr r0, [sp, #WEAPON_SPECIALIZER_THIS]
+      ldr r1, [sp, #WEAPON_SPECIALIZER_ID]
+      
+      cmp r3, #0x0
+      beq weapon_specializer_default
+      blxne r3
+      
+      add sp, sp, #WEAPON_SPECIALIZER_SHIFT
+   pop {r1-r8, pc}
+   
+weapon_specializer_default:
+      ldr r0, =weapon_specializer_thing1 ; TODO
+      ldr r0, [r0]
+      tst r0, #1
+      bne loc_98309C
+      ldr r0, =weapon_specializer_thing1
+      blx weapon_specializer_thing4
+      cmp r0, #0
+      beq loc_98309C
+      ldr r0, =weapon_specializer_thing2
+      ldr r1, =weapon_specializer_thing3
+      str r1, [r0]
+      ldr r0, =weapon_specializer_thing1
+loc_98309C:
+      ldr r0, =weapon_specializer_thing2
+   pop {r1-r8, pc}
+
+cro_get_weapon_specializer_str:
+   push {r1-r7, lr}
+      sub sp, sp, #0x4
+      mov r5, r0 ; ID
+
+      ldr r0, =0x100
+      bl liballoc
+      mov r7, r0
+   
+      ldr r0, =projectile_table_ptr
+      ldr r0, [r0]
+      ldr r0, [r0, r5, lsl #2]
+      mov r4, r0 ; projectile
+      bl strlen
+      mov r6, r0
+      
+      ldr r0, =projectile_prefix_table_ptr
+      ldr r0, [r0]
+      ldr r0, [r0, r5, lsl #2]
+      mov r5, r0 ; character
+      bl strlen
+      add r0, r0, #24
+      add r0, r0, r6
+      
+      str r4, [sp]
+      mov r3, r5
+      mov r2, r0
+      ldr r1, =chr_weapon_specializer_format
+      mov r0, r7
+      bl sprintf
+
+      mov r0, r7
+      add sp, sp, #0x4
+   pop {r1-r7, pc}
+
+.align 4
+chr_weapon_specializer_format: .ascii "_ZN3app%uget_weapon_specializer_%s_%sEv",0
+
+.pool
+
+
+
 .org 0xA36C00
 
 ; Keep a pointer to our string in r8 for later
