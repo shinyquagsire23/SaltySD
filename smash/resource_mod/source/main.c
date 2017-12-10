@@ -639,7 +639,12 @@ void _main(rf_header* header, void *contents)
             level_target++;
         }
         
-        u32 len = len_to(substr, '.');
+        u32 len = 0;
+        for (int i = 0; i < strlen(substr); i++)
+        {
+            if (substr[i] == '.')
+               len = i+1;
+        }
         char *file_ext = malloc(0x10);
         if(len != -1)
         {
