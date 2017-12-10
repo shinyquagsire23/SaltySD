@@ -485,6 +485,65 @@ cro_get_fighter_specializer_str:
 .align 4
 chr_fighter_specializer_format: .ascii "_ZN3app%uget_fighter_specializer_%sEv",0
 
+.align 4
+get_weapon_proj_name:
+   push {r4-r5,lr}
+      mov r5, r0
+
+      ldr r0, =projectile_table_ptr
+      ldr r0, [r0]
+      ldr r0, [r0, r5, lsl #2]
+
+      ; Our giant list of non-compliant names with random differences...
+      cmp r5, #3
+      ldreq r0, =mario_pump_water
+      cmp r5, #4
+      ldreq r0, =mario_huge_flame
+      cmp r5, #37
+      ldreq r0, =zelda_lightingbow_arrow
+      cmp r5, #40
+      ldreq r0, =dedede_star_missile
+      cmp r5, #69
+      ldreq r0, =sheik_lightingbow_arrow
+      cmp r5, #90
+      ldreq r0, =ness_yoyo_head
+      cmp r5, #92
+      ldreq r0, =link_clawshot_head
+      cmp r5, #93
+      ldreq r0, =link_clawshot_hand
+      cmp r5, #210
+      ldreq r0, =toonlink_hookshot_head
+      cmp r5, #211
+      ldreq r0, =toonlink_hookshot_hand
+      ldr r4, =#302
+      cmp r5, r4
+      ldreq r0, =pacman_firehydrant_water
+      ldr r4, =#346
+      cmp r5, r4
+      ldreq r0, =samus_gbeamall
+      ldr r4, =#370
+      cmp r5, r4
+      ldreq r0, =lucas_himohebiall
+      ldr r4, =#373
+      cmp r5, r4
+      ldreq r0, =roy_sword
+   pop {r4-r5, pc}
+
+mario_pump_water: .ascii "pump_water",0
+mario_huge_flame: .ascii "huge_flame",0
+zelda_lightingbow_arrow: .ascii "lightingbow_arrow",0
+dedede_star_missile: .ascii "star_missile",0
+sheik_lightingbow_arrow: .ascii "lightingbow_arrow",0
+ness_yoyo_head: .ascii "yoyo_head",0
+link_clawshot_head: .ascii "clawshot_head",0
+link_clawshot_hand: .ascii "clawshot_hand",0
+toonlink_hookshot_head: .ascii "hookshot_head",0
+toonlink_hookshot_hand: .ascii "hookshot_hand",0
+pacman_firehydrant_water: .ascii "firehydrant_water",0
+samus_gbeamall: .ascii "gbeamall",0
+lucas_himohebiall: .ascii "himohebiall",0
+roy_sword: .ascii "sword",0
+
 .pool
 
 
@@ -527,7 +586,7 @@ WEAPON_DATA_FUNC equ (WEAPON_DATA_SHIFT-0x10)
       
       cmp r3, #0x0
       ldreq r0, =weapon_data_default
-      blx r3
+      blxne r3
       
       add sp, sp, #WEAPON_DATA_SHIFT
    pop {r1-r8, pc}
@@ -541,9 +600,9 @@ cro_get_weapon_data_str:
       bl liballoc
       mov r7, r0
    
-      ldr r0, =projectile_table_ptr
-      ldr r0, [r0]
-      ldr r0, [r0, r5, lsl #2]
+      mov r0, r5
+      bl get_weapon_proj_name
+
       mov r4, r0 ; projectile
       bl strlen
       mov r6, r0
@@ -605,6 +664,7 @@ WEAPON_SPECIALIZER_FUNC equ (WEAPON_SPECIALIZER_SHIFT-0x10)
       
       ldr r0, [sp, #WEAPON_SPECIALIZER_THIS]
       ldr r1, [sp, #WEAPON_SPECIALIZER_ID]
+      ldr r3, [sp, #WEAPON_DATA_FUNC]
       
       cmp r3, #0x0
       beq weapon_specializer_default
@@ -639,9 +699,9 @@ cro_get_weapon_specializer_str:
       bl liballoc
       mov r7, r0
    
-      ldr r0, =projectile_table_ptr
-      ldr r0, [r0]
-      ldr r0, [r0, r5, lsl #2]
+      mov r0, r5
+      bl get_weapon_proj_name
+
       mov r4, r0 ; projectile
       bl strlen
       mov r6, r0
