@@ -38,3 +38,7 @@ all:
 	@rm a.out
 	@python patch.py code.bin
 	@armips cro_redir.asm
+
+clean:
+	@rm -R bin
+	@cd resource_mod && $(MAKE) clean

@@ -1,6 +1,6 @@
 .arm.little
 
-.open "code_saltysd.bin","code_saltysd_cro.bin",0x100000
+.open "code_saltysd.bin",0x100000
 
 .include "common.armips.asm"
 
