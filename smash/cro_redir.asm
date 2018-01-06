@@ -63,6 +63,9 @@ cro_sarc_skip:
 ; Patch CRO object new function
 .org cro_fighter_new
    push {r2-r8, lr}
+      cmp r0, #0x0
+      moveq r1, #0x0
+      beq failed
       mov r4, r0
       ldrb r0, [r4, #0x2B0] ; get type
       cmp r0, #0x1
